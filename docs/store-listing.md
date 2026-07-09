@@ -116,7 +116,7 @@ English:
 | `sidePanel` | Renders the extension's tab-management UI in the browser side panel. |
 | `tabs` | Reads tab title/URL/favicon to list the user's open tabs in the sidebar, focuses or closes tabs the user clicks, and opens pinned URLs. |
 | `tabGroups` | Implements Spaces: each Space is a tab group that the extension creates, renames, collapses and expands when the user switches Spaces. |
-| `storage` | Persists pins, Space settings and per-Space tab URLs locally (`storage.local`) and via the user's own browser sync (`storage.sync`). Nothing is sent to any server. |
+| `storage` | Persists pins, Space settings and per-Space tab URLs locally (`storage.local`). Nothing is sent to any server. |
 | `favicon` | Displays site icons next to pins and tabs in the sidebar. |
 
 - **リモートコード**: 使用しない(No, I am not using remote code)
