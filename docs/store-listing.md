@@ -1,46 +1,105 @@
 # ストア掲載情報(Chrome Web Store / Edge Add-ons 提出用)
 
-ダッシュボードにコピペするための下書き。2026-07-09 作成。
+ダッシュボードにコピペするための確定版。
 
 ## 基本情報
 
 - **名前**: Tab Harbor
-- **カテゴリ**: 仕事効率化 / Productivity(Chrome は「ツール」系、Edge は「Productivity」)
-- **言語**: 日本語(必要なら英語も追加)
+- **カテゴリ**: Chrome「仕事効率化 › ワークフローと計画」/ Edge「Productivity」
+- **言語**: 日本語 + English
+- **サポート URL**: https://github.com/itwuthe3/tab-harbor
+- **プライバシーポリシー URL**: https://github.com/itwuthe3/tab-harbor/blob/main/PRIVACY.md
+- **検索キーワード(Edge)**: タブ管理、サイドバー、タブグループ、ワークスペース、
+  tab manager、sidebar、Arc
 
 ## 短い説明(132 文字以内)
 
-> Arc 風のサイドバーでタブを整理。Pin(固定タブ)と Space(作業スペース)で
-> コンテキストを切り替え。Arc からのインポート対応。
+日本語:
 
-英語版:
+> Arc 風サイドバーでタブを整理。Pin(固定タブ)と Space(作業スペース)で
+> 仕事・個人などのコンテキストを一瞬で切替。フォルダ階層、Arc からの
+> インポート対応。データ収集なし。
 
-> Arc-style sidebar for your tabs. Organize with pinned tabs and Spaces,
-> switch contexts instantly, and import your setup from Arc.
+English:
 
-## 詳細説明
+> Arc-style sidebar tab manager. Pin your go-to sites, switch contexts with
+> Spaces, import your setup from Arc. No data collection.
 
-> Tab Harbor は、Arc ブラウザの中核体験(Pin 中心のサイドバー / Space による
-> コンテキスト分離)を Edge / Chrome で再現するタブ管理拡張です。
+## 詳細説明(日本語)
+
+> Tab Harbor は、Arc ブラウザの「Pin 中心のサイドバー」と「Space による
+> コンテキスト分離」を Microsoft Edge / Google Chrome で再現するタブ管理拡張です。
 >
-> ◆ Pin(固定タブ)
-> よく使うサイトをサイドバー上部に固定。クリックすると開いているタブに
-> フォーカスし、なければ開きます。タブはPin行そのものとして振る舞い、
-> 一時タブの一覧を汚しません。フォルダで階層化もできます。
+> こんな方に:
+> ・タブを開きすぎて、目的のタブが見つからない
+> ・仕事用・調べ物用・個人用で、タブ一式をまるごと切り替えたい
+> ・Arc から移行してきて、あのサイドバー体験が恋しい
 >
-> ◆ Space(作業スペース)
-> 「仕事」「調べ物」「個人」など、Pin とタブのセットをまるごと切り替え。
-> Space はタブグループとして実装され、切り替えると他の Space は
-> 折りたたまれます。ショートカット(Alt+Shift+. / ,)で巡回切替。
+> ■ Pin — よく使うサイトを「アプリ」のように
+> サイドバー上部に固定したサイトは、クリックすると開いているタブにフォーカスし、
+> なければ開きます。開いたタブは Pin と一体化して一時タブの一覧を汚さず、
+> ページ内で移動しても Pin が追跡。「－」ボタンでタブだけ閉じて Pin を残せます。
+> フォルダによる階層整理(ドラッグ&ドロップ・折りたたみ・ネスト)にも対応。
 >
-> ◆ Arc からのインポート
+> ■ Space — 作業スペースをまるごと切り替え
+> 「仕事」「調べ物」「個人」など、Pin とタブのセットを Space として保持します。
+> 切り替えると対象のタブグループが展開され、ほかは折りたたまれます。テーマ色つき。
+> 新しいタブは現在の Space に自動で振り分けられ、ブラウザを再起動しても
+> タブ構成を復元します。
+>
+> ■ Arc からのインポート
 > Arc の StorableSidebar.json を選ぶだけで、Space・Pin(フォルダ階層ごと)・
-> 開いていたタブを取り込めます。
+> Favorites・開いていたタブを取り込めます。
 >
-> ◆ プライバシー
-> データはブラウザ内にのみ保存され、外部送信は一切ありません。
+> ■ キーボードショートカット
+> Alt+Shift+H: サイドバーを開く
+> Alt+Shift+. / Alt+Shift+,: Space を巡回切替
+> (ブラウザのショートカット設定ページから変更できます)
 >
-> ※ Edge では「垂直タブ」と併用すると、より Arc に近い見た目になります。
+> ■ プライバシー
+> データはブラウザ内にのみ保存され、外部サーバーへの送信・アナリティクス・
+> トラッキングは一切ありません。ソースコードは GitHub で公開しています:
+> https://github.com/itwuthe3/tab-harbor
+>
+> ■ ヒント
+> Edge の「垂直タブ」と組み合わせると、より Arc に近い画面構成になります。
+
+## 詳細説明(English)
+
+> Tab Harbor brings Arc's signature sidebar experience — pinned tabs and
+> Spaces — to Microsoft Edge and Google Chrome.
+>
+> For you if:
+> • You drown in open tabs and can't find the one you need
+> • You want to swap entire tab sets between work, research and personal contexts
+> • You migrated from Arc and miss that sidebar
+>
+> ■ Pins — your go-to sites, app-like
+> Pinned sites live at the top of the sidebar. Clicking one focuses its tab
+> (or opens it), and that tab merges into the pin instead of cluttering your
+> tab list. The pin follows in-page navigation, and "–" closes the tab while
+> keeping the pin. Organize pins into nested, collapsible folders with
+> drag & drop.
+>
+> ■ Spaces — switch whole working contexts
+> Keep separate sets of pins and tabs for work, research, personal life.
+> Switching a Space expands its tab group and collapses the rest, with theme
+> colors per Space. New tabs join the active Space automatically, and your
+> layout survives browser restarts.
+>
+> ■ Import from Arc
+> Pick your Arc StorableSidebar.json and bring over Spaces, pinned tabs
+> (with folder structure), Favorites and open tabs.
+>
+> ■ Keyboard shortcuts
+> Alt+Shift+H: toggle the sidebar / Alt+Shift+. and Alt+Shift+,: cycle Spaces
+>
+> ■ Privacy
+> Everything is stored inside your browser. No servers, no analytics,
+> no tracking. Open source: https://github.com/itwuthe3/tab-harbor
+>
+> ■ Tip
+> Pairs nicely with Edge's vertical tabs for the full Arc-like layout.
 
 ## 単一目的の説明(Chrome「プライバシーへの取り組み」タブ)
 
@@ -61,16 +120,14 @@
 - **リモートコード**: 使用しない(No, I am not using remote code)
 - **データ収集(Chrome の Data usage / Edge の Privacy)**: 収集しない。
   すべて「No」で申告(WebsiteContent 等の収集なし)
-- **プライバシーポリシー URL**: PRIVACY.md を公開した URL を記載
-  (GitHub リポジトリ公開 or GitHub Pages / Gist)
 
 ## 提出物チェックリスト
 
 - [ ] `scripts/package.sh` で生成した zip(`dist/tab-harbor-<version>.zip`)
-- [ ] スクリーンショット 1280x800(最低 1 枚、推奨 3 枚)
-- [ ] ストアアイコン: Chrome 128x128(`icons/icon128.png` を流用可)、
-      Edge 300x300(要リサイズ生成)
-- [ ] プライバシーポリシーの公開 URL
+- [ ] スクリーンショット 3 枚 1280x800(`dist/store-assets/screenshot-*.png`)
+- [ ] ストアアイコン: Chrome 128x128(`icons/icon128.png`)、
+      Edge 300x300(`dist/store-assets/icon300.png`)
+- [ ] プライバシーポリシー URL(上記)
 - [ ] 再提出時は manifest.json の `version` を上げる
 
 ## 審査の目安
@@ -78,5 +135,4 @@
 - Chrome Web Store: 登録料 $5(初回のみ)。審査は通常 1〜3 日
   (`tabs` 権限があるためもう少しかかることもある)
 - Edge Add-ons: 登録無料。審査は数日〜1 週間程度
-- 公開範囲は「公開」のほか「限定公開(リンクを知っている人のみ)」も選べる。
-  社内配布が主目的なら限定公開から始めるのが安全
+- 公開範囲は「公開」のほか「限定公開(リンクを知っている人のみ)」も選べる
