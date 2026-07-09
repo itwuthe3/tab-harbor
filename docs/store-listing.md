@@ -123,6 +123,42 @@ English:
 - **データ収集(Chrome の Data usage / Edge の Privacy)**: 収集しない。
   すべて「No」で申告(WebsiteContent 等の収集なし)
 
+## Notes for certification(Edge・審査担当者向けメモ)
+
+**注意: この欄は URL を含む文章を「禁止文字」として弾く**(2026-07 提出時に確認)。
+`https://` 形式のリンクや記号(引用符・コロン等)を含めず、プレーンな英文で書くこと。
+リポジトリの場所は散文で説明する(例: repository tab-harbor on GitHub)。
+テスターは Arc を持っていないため、インポート機能の検証用に
+`examples/arc-sample.json` を用意してある(リポジトリの examples フォルダと案内する)。
+
+実際に通った文面:
+
+> Tab Harbor is a tab manager in the browser side panel. No account or sign-in is
+> needed to test any feature. All data stays in browser storage, nothing is sent
+> to any server, and no remote code is used. The UI is in Japanese. The source
+> code is public on GitHub (repository tab-harbor by user itwuthe, digit three,
+> no spaces).
+>
+> How to test. Click the toolbar icon to open the side panel. Existing tabs are
+> grouped into a default Space named Home, which is a normal tab group.
+>
+> Pins. Hover a tab row and click the pin button. Clicking a pin focuses or
+> reopens its tab. The minus button closes the tab and keeps the pin, the x
+> button removes the pin. The New folder button in the Pin section header
+> creates folders, and pins can be dragged onto them.
+>
+> Spaces. Create one via the plus chip in the header. Clicking chips switches
+> context, expanding the target tab group and collapsing the others.
+>
+> Arc import. Click the import icon in the header and select an Arc sidebar
+> file. Testers without the Arc browser can use the sample file named
+> arc-sample.json, found in the examples folder of the GitHub repository
+> mentioned above.
+>
+> Permissions. The sidePanel permission renders the UI, tabs lists and focuses
+> or closes tabs, tabGroups implements Spaces, storage persists pins and
+> settings locally, and favicon shows site icons.
+
 ## 提出物チェックリスト
 
 - [ ] `scripts/package.sh` で生成した zip(`dist/tab-harbor-<version>.zip`)
