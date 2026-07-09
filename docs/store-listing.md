@@ -9,8 +9,10 @@
 - **言語**: 日本語 + English
 - **サポート URL**: https://github.com/itwuthe3/tab-harbor
 - **プライバシーポリシー URL**: https://github.com/itwuthe3/tab-harbor/blob/main/PRIVACY.md
-- **検索キーワード(Edge)**: タブ管理、サイドバー、タブグループ、ワークスペース、
-  tab manager、sidebar、Arc
+- **検索キーワード(Edge・日本語リスティング)**: タブ管理、サイドバー、タブグループ、
+  ワークスペース、tab manager、sidebar、Arc
+- **検索キーワード(Edge・英語リスティング)**: tab manager、sidebar、tab groups、
+  workspaces、Arc、vertical tabs、productivity
 
 ## 短い説明(132 文字以内)
 
