@@ -1,0 +1,47 @@
+{
+  "manifest_version": 3,
+  "name": "Tab Harbor",
+  "version": "0.1.0",
+  "description": "Arc 風サイドバー: Pin と Space でタブを管理する Edge / Chrome 拡張",
+  "minimum_chrome_version": "116",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "Tab Harbor を開く",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "side_panel": {
+    "default_path": "sidepanel/panel.html"
+  },
+  "permissions": [
+    "sidePanel",
+    "tabs",
+    "tabGroups",
+    "storage",
+    "favicon"
+  ],
+  "commands": {
+    "_execute_action": {
+      "suggested_key": { "default": "Alt+Shift+H" },
+      "description": "サイドバーを開く"
+    },
+    "next-space": {
+      "suggested_key": { "default": "Alt+Shift+Period" },
+      "description": "次の Space に切り替え"
+    },
+    "prev-space": {
+      "suggested_key": { "default": "Alt+Shift+Comma" },
+      "description": "前の Space に切り替え"
+    }
+  }
+}

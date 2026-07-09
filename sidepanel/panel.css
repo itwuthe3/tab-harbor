@@ -1,0 +1,511 @@
+/* Tab Harbor side panel */
+
+:root {
+  --bg: #12161d;
+  --bg-raised: #1a2029;
+  --bg-hover: #232b37;
+  --fg: #e6ebf2;
+  --fg-dim: #8a94a3;
+  --border: #2a3340;
+  --accent: #4a86e8; /* Space のテーマ色で上書き */
+  --danger: #e0564f;
+  --radius: 8px;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f4f6f9;
+    --bg-raised: #ffffff;
+    --bg-hover: #e7ecf3;
+    --fg: #1d2430;
+    --fg-dim: #66707e;
+    --border: #d8dee7;
+  }
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", "Hiragino Sans", sans-serif;
+  font-size: 13px;
+  background: var(--bg);
+  color: var(--fg);
+  overflow: hidden;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* ---------- header ---------- */
+#header {
+  padding: 12px 12px 8px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--accent) 14%, var(--bg)),
+    var(--bg)
+  );
+}
+
+#space-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+#space-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex: none;
+}
+
+#space-name {
+  font-size: 15px;
+  font-weight: 650;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#space-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.62;
+  transition: opacity 0.12s, transform 0.12s;
+}
+
+.chip:hover {
+  opacity: 1;
+  transform: scale(1.08);
+}
+
+.chip.active {
+  opacity: 1;
+  border-color: var(--fg);
+}
+
+.chip.add {
+  background: transparent;
+  border: 1.5px dashed var(--fg-dim);
+  color: var(--fg-dim);
+  opacity: 1;
+}
+
+.chip.add:hover {
+  border-color: var(--fg);
+  color: var(--fg);
+}
+
+/* ---------- sections ---------- */
+#pins-section {
+  padding: 10px 8px 6px;
+  overflow-y: auto;
+  max-height: 45%;
+  flex: none;
+}
+
+#tabs-section {
+  padding: 8px 8px 10px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6px 6px;
+}
+
+.section-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+}
+
+#divider {
+  border-top: 1px solid var(--border);
+  margin: 0 12px;
+}
+
+/* ---------- rows ---------- */
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  user-select: none;
+  min-height: 32px;
+}
+
+.row:hover {
+  background: var(--bg-hover);
+}
+
+.row.active-tab {
+  background: color-mix(in srgb, var(--accent) 22%, var(--bg-raised));
+}
+
+.row.drag-over {
+  box-shadow: inset 0 2px 0 var(--accent);
+}
+
+.row .favicon,
+.row .letter {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  border-radius: 3px;
+}
+
+.row .letter {
+  background: var(--accent);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.row .label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row .badge {
+  flex: none;
+  font-size: 10px;
+  color: var(--fg-dim);
+}
+
+.row .row-btn {
+  flex: none;
+  visibility: hidden;
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--fg-dim);
+  font-size: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.row:hover .row-btn {
+  visibility: visible;
+}
+
+.row .row-btn:hover {
+  background: var(--bg-raised);
+  color: var(--fg);
+}
+
+.row .row-btn.close:hover {
+  color: var(--danger);
+}
+
+/* ---------- pinned tabs (Arc 風) ---------- */
+/* タブが開いていない Pin は少し沈ませ、生きている Pin をタブらしく見せる */
+.row.pin-row .label {
+  color: var(--fg-dim);
+}
+
+.row.pin-row.live .label {
+  color: var(--fg);
+}
+
+/* ---------- pin folders ---------- */
+.row .chevron {
+  width: 14px;
+  flex: none;
+  color: var(--fg-dim);
+  font-size: 10px;
+  text-align: center;
+  transition: transform 0.12s;
+}
+
+.row.folder-open .chevron {
+  transform: rotate(90deg);
+}
+
+.row .folder-icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  font-size: 12px;
+  line-height: 16px;
+  text-align: center;
+}
+
+.row.folder-row .label {
+  font-weight: 600;
+}
+
+.row.drag-into {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.row .row-btn.confirming {
+  visibility: visible;
+  background: var(--danger);
+  color: #fff;
+}
+
+.empty-hint {
+  padding: 10px 8px;
+  color: var(--fg-dim);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* ---------- buttons ---------- */
+.icon-btn {
+  border: none;
+  background: transparent;
+  color: var(--fg-dim);
+  font-size: 13px;
+  cursor: pointer;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+}
+
+.icon-btn:hover {
+  background: var(--bg-hover);
+  color: var(--fg);
+}
+
+.text-btn {
+  border: none;
+  background: transparent;
+  color: var(--fg-dim);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.text-btn:hover {
+  background: var(--bg-hover);
+  color: var(--fg);
+}
+
+/* ---------- tooltip ---------- */
+#tooltip {
+  position: fixed;
+  z-index: 10;
+  max-width: 260px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+
+#tooltip .tt-title {
+  font-weight: 600;
+  margin-bottom: 2px;
+  overflow-wrap: anywhere;
+}
+
+#tooltip .tt-url {
+  color: var(--fg-dim);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- dialog ---------- */
+dialog {
+  margin: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-raised);
+  color: var(--fg);
+  padding: 16px;
+  width: min(90vw, 300px);
+}
+
+dialog::backdrop {
+  background: rgba(0, 0, 0, 0.45);
+}
+
+#space-form h2,
+#folder-form h2 {
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+#space-form label,
+#folder-form label {
+  display: block;
+  font-size: 11px;
+  color: var(--fg-dim);
+  margin: 10px 0 4px;
+}
+
+#space-form input[type="text"],
+#folder-form input[type="text"] {
+  width: 100%;
+  padding: 7px 9px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 13px;
+}
+
+#space-form input[type="text"]:focus,
+#folder-form input[type="text"]:focus {
+  outline: 2px solid var(--accent);
+  border-color: transparent;
+}
+
+#color-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.swatch {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid transparent;
+}
+
+.swatch.selected {
+  border-color: var(--fg);
+}
+
+.dialog-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.dialog-actions .spacer {
+  flex: 1;
+}
+
+.dialog-actions button {
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  background: var(--bg-hover);
+  color: var(--fg);
+}
+
+.dialog-actions button.primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.dialog-actions button.danger {
+  background: transparent;
+  color: var(--danger);
+}
+
+.dialog-actions button.danger.confirming {
+  background: var(--danger);
+  color: #fff;
+}
+
+/* ---------- import dialog ---------- */
+#import-dialog h2 {
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+#import-body {
+  max-height: 40vh;
+  overflow-y: auto;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+#import-body .import-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+}
+
+#import-body .import-row .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex: none;
+}
+
+#import-body .import-row .counts {
+  color: var(--fg-dim);
+  flex: none;
+  margin-left: auto;
+}
+
+#import-body .import-note {
+  color: var(--fg-dim);
+  margin-top: 8px;
+}
+
+/* ---------- scrollbar ---------- */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--fg-dim);
+}
