@@ -1,0 +1,30 @@
+{
+  "comment": "Sample Arc StorableSidebar.json for testing Tab Harbor's import feature",
+  "version": 1,
+  "sidebar": {
+    "containers": [
+      { "global": true },
+      {
+        "topAppsContainerIDs": ["fav"],
+        "spaces": [
+          "s1", { "id": "s1", "title": "Work", "containerIDs": ["pinned", "p1", "unpinned", "u1"] },
+          "s2", { "id": "s2", "title": "Personal", "containerIDs": ["pinned", "p2", "unpinned", "u2"] }
+        ],
+        "items": [
+          "fav", { "id": "fav", "childrenIds": ["ft"], "data": { "itemContainer": {} } },
+          "ft", { "id": "ft", "parentID": "fav", "data": { "tab": { "savedTitle": "Favorite site", "savedURL": "https://www.wikipedia.org/" } } },
+          "p1", { "id": "p1", "childrenIds": ["t1", "f1"], "data": { "itemContainer": {} } },
+          "t1", { "id": "t1", "parentID": "p1", "data": { "tab": { "savedTitle": "Docs", "savedURL": "https://developer.mozilla.org/" } } },
+          "f1", { "id": "f1", "parentID": "p1", "childrenIds": ["t2", "t3"], "title": "Project", "data": { "list": {} } },
+          "t2", { "id": "t2", "parentID": "f1", "data": { "tab": { "savedTitle": "Issue tracker", "savedURL": "https://github.com/" } } },
+          "t3", { "id": "t3", "parentID": "f1", "data": { "tab": { "savedTitle": "CI dashboard", "savedURL": "https://example.com/ci" } } },
+          "u1", { "id": "u1", "childrenIds": ["t4"], "data": { "itemContainer": {} } },
+          "t4", { "id": "t4", "parentID": "u1", "data": { "tab": { "savedTitle": "Open tab", "savedURL": "https://example.com/report" } } },
+          "p2", { "id": "p2", "childrenIds": ["t5"], "data": { "itemContainer": {} } },
+          "t5", { "id": "t5", "parentID": "p2", "data": { "tab": { "savedTitle": "News", "savedURL": "https://news.ycombinator.com/" } } },
+          "u2", { "id": "u2", "childrenIds": [], "data": { "itemContainer": {} } }
+        ]
+      }
+    ]
+  }
+}
