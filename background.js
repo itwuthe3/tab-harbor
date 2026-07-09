@@ -18,30 +18,43 @@ function enqueue(fn) {
 }
 
 // ---------------------------------------------------------------------------
-// 永続データ (storage.sync): Space 定義と Pin
+// 永続データ (storage.local): Space 定義と Pin
+//   storage.sync は per-item 8KB 上限があり大量 Pin で quota 超過するため local を使う。
 //   spacesOrder: [spaceId, ...]
 //   space:<id>:  { id, name, color, pins: [{ id, title, url }] }
 // ---------------------------------------------------------------------------
 async function getOrder() {
-  const { spacesOrder = [] } = await chrome.storage.sync.get("spacesOrder");
+  const { spacesOrder = [] } = await chrome.storage.local.get("spacesOrder");
   return spacesOrder;
 }
 async function setOrder(order) {
-  await chrome.storage.sync.set({ spacesOrder: order });
+  await chrome.storage.local.set({ spacesOrder: order });
 }
 async function getSpace(id) {
   const key = "space:" + id;
-  const obj = await chrome.storage.sync.get(key);
+  const obj = await chrome.storage.local.get(key);
   return obj[key] ?? null;
 }
 async function saveSpace(space) {
-  await chrome.storage.sync.set({ ["space:" + space.id]: space });
+  await chrome.storage.local.set({ ["space:" + space.id]: space });
 }
 async function getAllSpaces() {
   const order = await getOrder();
   if (!order.length) return [];
-  const obj = await chrome.storage.sync.get(order.map((id) => "space:" + id));
+  const obj = await chrome.storage.local.get(order.map((id) => "space:" + id));
   return order.map((id) => obj["space:" + id]).filter(Boolean);
+}
+
+// storage.sync にデータが残っている場合は storage.local へ一度だけ移行する
+async function migrateFromSync() {
+  const { spacesOrder } = await chrome.storage.sync.get("spacesOrder");
+  if (!Array.isArray(spacesOrder) || !spacesOrder.length) return;
+  const { spacesOrder: localOrder } = await chrome.storage.local.get("spacesOrder");
+  if (localOrder) return; // 移行済み
+  const keys = ["spacesOrder", ...spacesOrder.map((id) => "space:" + id)];
+  const data = await chrome.storage.sync.get(keys);
+  await chrome.storage.local.set(data);
+  await chrome.storage.sync.remove(keys).catch(() => {});
 }
 
 // ---------------------------------------------------------------------------
@@ -69,6 +82,7 @@ chrome.runtime.onInstalled.addListener((details) => {
 chrome.runtime.onStartup.addListener(() => enqueue(init));
 
 async function init() {
+  await migrateFromSync();
   await chrome.sidePanel
     .setPanelBehavior({ openPanelOnActionClick: true })
     .catch(() => {});
@@ -255,7 +269,7 @@ async function deleteSpace(windowId, spaceId) {
   }
   const newOrder = order.filter((id) => id !== spaceId);
   await setOrder(newOrder);
-  await chrome.storage.sync.remove("space:" + spaceId);
+  await chrome.storage.local.remove("space:" + spaceId);
   await chrome.storage.local.remove("savedTabs:" + spaceId);
   for (const b of Object.values(bindings)) {
     if (b.activeSpaceId === spaceId) b.activeSpaceId = newOrder[0];
