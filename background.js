@@ -466,6 +466,22 @@ async function toggleFolder(spaceId, folderId) {
   broadcast();
 }
 
+// customTitle を設定する。空文字で渡すと解除してライブタイトルに戻す。
+async function renamePin(spaceId, pinId, customTitle) {
+  const space = await getSpace(spaceId);
+  if (!space) return;
+  const found = findItem(space.pins, pinId);
+  if (!found || isFolder(found.item)) return;
+  const title = String(customTitle || "").trim().slice(0, 200);
+  if (title) {
+    found.item.customTitle = title;
+  } else {
+    delete found.item.customTitle;
+  }
+  await saveSpace(space);
+  broadcast();
+}
+
 // Pin クリック(Arc の Pinned Tab 挙動):
 // Pin は「自分のタブ」を 1 つ持つ。束縛済みタブがあれば URL が変わっていても
 // そこへフォーカス。なければ URL 一致タブを束縛、それも無ければ新規に開いて束縛する。
@@ -870,6 +886,8 @@ async function dispatch(msg) {
       return enqueue(() => renameFolder(msg.spaceId, msg.folderId, msg.title));
     case "toggleFolder":
       return enqueue(() => toggleFolder(msg.spaceId, msg.folderId));
+    case "renamePin":
+      return enqueue(() => renamePin(msg.spaceId, msg.pinId, msg.customTitle));
     case "openPin":
       return enqueue(() => openPin(msg.windowId, msg.spaceId, msg.pinId));
     case "importArc":

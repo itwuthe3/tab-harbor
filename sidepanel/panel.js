@@ -160,16 +160,28 @@ function indent(row, depth) {
 function pinRow(pin, containerId, index, depth) {
   const row = document.createElement("div");
   // 束縛タブを持つ Pin は「生きているタブ」として表示(Arc の Pinned Tab)
+  // customTitle 設定済みの Pin は .custom クラスで ✎ ボタンを常時薄く表示
   row.className =
-    "row pin-row" + (pin.tabId ? " live" : "") + (pin.active ? " active-tab" : "");
+    "row pin-row" +
+    (pin.tabId ? " live" : "") +
+    (pin.active ? " active-tab" : "") +
+    (pin.customTitle ? " custom" : "");
   row.draggable = true;
   indent(row, depth);
   row.appendChild(faviconEl(pin.url, pin.favIconUrl || ""));
 
   const label = document.createElement("span");
   label.className = "label";
-  label.textContent = pin.liveTitle || pin.title;
+  // customTitle(ユーザー固定名) → liveTitle(開いているタブ名) → 保存名 の優先順位
+  label.textContent = pin.customTitle || pin.liveTitle || pin.title;
   row.appendChild(label);
+
+  row.appendChild(
+    rowButton("✎", pin.customTitle ? "Pin 名を編集(空で保存するとリセット)" : "Pin 名を編集", (e) => {
+      e.stopPropagation();
+      startPinRename(pin, label, row);
+    }, "rename")
+  );
 
   if (pin.tabId) {
     row.appendChild(
@@ -191,7 +203,9 @@ function pinRow(pin, containerId, index, depth) {
   });
 
   // ホバープレビュー(FR-3 簡易版: タイトル + URL)
-  row.addEventListener("mouseenter", () => showTooltip(row, pin.title, pin.url));
+  row.addEventListener("mouseenter", () =>
+    showTooltip(row, pin.customTitle || pin.title, pin.url)
+  );
   row.addEventListener("mouseleave", hideTooltip);
 
   // DnD: この行の位置(同じ階層のこの位置)へ移動
@@ -201,6 +215,44 @@ function pinRow(pin, containerId, index, depth) {
   });
   bindDropTarget(row, () => ({ targetFolderId: containerId, targetIndex: index }));
   return row;
+}
+
+// Pin 名のインライン編集。Enter/blur で確定、Escape でキャンセル。
+// 空で確定すると customTitle を解除してライブタイトルに戻る。
+function startPinRename(pin, label, row) {
+  const input = document.createElement("input");
+  input.type = "text";
+  input.className = "pin-rename-input";
+  input.value = pin.customTitle || pin.liveTitle || pin.title;
+  input.maxLength = 200;
+  input.addEventListener("click", (e) => e.stopPropagation());
+  label.replaceWith(input);
+  row.draggable = false;
+  hideTooltip();
+
+  let done = false;
+  const finish = (save) => {
+    if (done) return;
+    done = true;
+    row.draggable = true;
+    if (save) {
+      send({
+        type: "renamePin",
+        spaceId: state.activeSpaceId,
+        pinId: pin.id,
+        customTitle: input.value.trim(),
+      });
+    } else {
+      input.replaceWith(label);
+    }
+  };
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); finish(true); }
+    if (e.key === "Escape") { e.preventDefault(); finish(false); }
+  });
+  input.addEventListener("blur", () => finish(true));
+  input.focus();
+  input.select();
 }
 
 function folderRow(folder, containerId, index, depth) {

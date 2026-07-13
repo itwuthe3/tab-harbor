@@ -255,6 +255,27 @@ body {
   color: var(--fg);
 }
 
+/* カスタム名が設定済みの Pin は ✎ を薄く常時表示してユーザーに伝える */
+.row.pin-row.custom .row-btn.rename {
+  visibility: visible;
+  opacity: 0.35;
+}
+
+/* Pin 名インライン編集フィールド */
+.pin-rename-input {
+  flex: 1;
+  min-width: 0;
+  height: 22px;
+  padding: 0 4px;
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  color: var(--fg);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+}
+
 /* ---------- pin folders ---------- */
 .row .chevron {
   width: 14px;
