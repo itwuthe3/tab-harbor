@@ -66,11 +66,21 @@ async function init() {
   await refresh();
 }
 
-function send(msg) {
-  return chrome.runtime.sendMessage(msg).catch((e) => {
-    console.warn("[TabHarbor panel]", e);
-    return null;
-  });
+// Service Worker が停止直後だとチャネルが閉じてエラーになる(MV3 既知問題)。
+// 150ms 待ってから 1 度だけリトライし、それでも失敗したら警告を出して null を返す。
+async function send(msg) {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      return await chrome.runtime.sendMessage(msg);
+    } catch (e) {
+      if (attempt === 0) {
+        await new Promise((r) => setTimeout(r, 150));
+        continue;
+      }
+      console.warn("[TabHarbor panel]", e);
+      return null;
+    }
+  }
 }
 
 let refreshTimer = null;
