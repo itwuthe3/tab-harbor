@@ -441,6 +441,7 @@ async function createFolder(spaceId, title) {
     id: crypto.randomUUID(),
     title: String(title || "フォルダ").trim().slice(0, 80) || "フォルダ",
     children: [],
+    collapsed: true,
   });
   await saveSpace(space);
   broadcast();
@@ -580,7 +581,7 @@ function mergeImportedItems(target, imported, haveUrls, summary) {
       let folder = target.find((t) => isFolder(t) && t.title === title);
       let created = false;
       if (!folder) {
-        folder = { id: crypto.randomUUID(), title, children: [] };
+        folder = { id: crypto.randomUUID(), title, children: [], collapsed: true };
         target.push(folder);
         created = true;
       }
