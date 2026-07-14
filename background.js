@@ -467,6 +467,31 @@ async function toggleFolder(spaceId, folderId) {
   broadcast();
 }
 
+// タブをドラッグして Pin エリアにドロップしたとき、指定位置に Pin を挿入する。
+async function pinTabAt(spaceId, tabId, targetFolderId, targetIndex) {
+  const space = await getSpace(spaceId);
+  const tab = await chrome.tabs.get(tabId).catch(() => null);
+  if (!space || !tab || !tab.url || !RESTORABLE_URL.test(tab.url)) return;
+  for (const pin of iterPins(space.pins)) {
+    if (pin.url === tab.url) return; // 重複はスキップ
+  }
+  const pin = { id: crypto.randomUUID(), title: (tab.title || tab.url).slice(0, 200), url: tab.url };
+  if (targetFolderId) {
+    const folder = findItem(space.pins, targetFolderId);
+    if (folder && isFolder(folder.item)) {
+      const idx = Number.isInteger(targetIndex) ? targetIndex : folder.item.children.length;
+      folder.item.children.splice(Math.max(0, Math.min(idx, folder.item.children.length)), 0, pin);
+    } else {
+      space.pins.push(pin);
+    }
+  } else {
+    const idx = Number.isInteger(targetIndex) ? targetIndex : space.pins.length;
+    space.pins.splice(Math.max(0, Math.min(idx, space.pins.length)), 0, pin);
+  }
+  await saveSpace(space);
+  broadcast();
+}
+
 // customTitle を設定する。空文字で渡すと解除してライブタイトルに戻す。
 async function renamePin(spaceId, pinId, customTitle) {
   const space = await getSpace(spaceId);
@@ -659,6 +684,7 @@ async function getState(windowId) {
 
   const toView = (t) => ({
     id: t.id,
+    index: t.index,
     title: t.title || t.pendingUrl || t.url || "",
     url: t.url || t.pendingUrl || "",
     favIconUrl: t.favIconUrl || "",
@@ -887,6 +913,10 @@ async function dispatch(msg) {
       return enqueue(() => renameFolder(msg.spaceId, msg.folderId, msg.title));
     case "toggleFolder":
       return enqueue(() => toggleFolder(msg.spaceId, msg.folderId));
+    case "pinTabAt":
+      return enqueue(() => pinTabAt(msg.spaceId, msg.tabId, msg.targetFolderId ?? null, msg.targetIndex));
+    case "moveTab":
+      return chrome.tabs.move(msg.tabId, { index: msg.targetIndex });
     case "renamePin":
       return enqueue(() => renamePin(msg.spaceId, msg.pinId, msg.customTitle));
     case "openPin":

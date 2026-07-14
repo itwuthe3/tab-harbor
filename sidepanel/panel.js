@@ -50,6 +50,7 @@ let state = null;
 let dialogMode = null; // "create" | "edit"
 let selectedColor = "blue";
 let dragItemId = null; // DnD 中の Pin / フォルダの id
+let dragTabId = null;  // DnD 中のタブ id
 let folderDialogState = null; // { mode: "create" } | { mode: "rename", folderId }
 
 init();
@@ -125,7 +126,21 @@ function renderPins() {
   if (!state.pins.length) {
     const hint = document.createElement("div");
     hint.className = "empty-hint";
-    hint.textContent = "Pin はまだありません。「＋ 現在のタブ」で追加できます。";
+    hint.textContent = "Pin はまだありません。「＋ 現在のタブ」で追加、またはタブをここへドロップ。";
+    // Pin が 0 件のときはヒント全体をドロップ受け皿にする
+    hint.addEventListener("dragover", (e) => {
+      if (!dragTabId) return;
+      e.preventDefault();
+      hint.classList.add("drag-over");
+    });
+    hint.addEventListener("dragleave", () => hint.classList.remove("drag-over"));
+    hint.addEventListener("drop", (e) => {
+      e.preventDefault();
+      hint.classList.remove("drag-over");
+      if (!dragTabId) return;
+      send({ type: "pinTabAt", spaceId: state.activeSpaceId, tabId: dragTabId, targetFolderId: null, targetIndex: undefined });
+      dragTabId = null;
+    });
     els.pinList.appendChild(hint);
     return;
   }
@@ -305,6 +320,7 @@ function folderRow(folder, containerId, index, depth) {
 
 function bindDropTarget(row, getTarget, hoverClass = "drag-over") {
   row.addEventListener("dragover", (e) => {
+    if (!dragItemId && !dragTabId) return;
     e.preventDefault();
     row.classList.add(hoverClass);
   });
@@ -312,18 +328,24 @@ function bindDropTarget(row, getTarget, hoverClass = "drag-over") {
   row.addEventListener("drop", (e) => {
     e.preventDefault();
     row.classList.remove(hoverClass);
-    if (!dragItemId) return;
-    const { targetFolderId, targetIndex } = getTarget();
-    if (dragItemId !== targetFolderId) {
-      send({
-        type: "moveItem",
-        spaceId: state.activeSpaceId,
-        itemId: dragItemId,
-        targetFolderId,
-        targetIndex,
-      });
+    if (dragItemId) {
+      const { targetFolderId, targetIndex } = getTarget();
+      if (dragItemId !== targetFolderId) {
+        send({
+          type: "moveItem",
+          spaceId: state.activeSpaceId,
+          itemId: dragItemId,
+          targetFolderId,
+          targetIndex,
+        });
+      }
+      dragItemId = null;
+    } else if (dragTabId) {
+      // タブを Pin に変換して指定位置へ挿入
+      const { targetFolderId, targetIndex } = getTarget();
+      send({ type: "pinTabAt", spaceId: state.activeSpaceId, tabId: dragTabId, targetFolderId, targetIndex });
+      dragTabId = null;
     }
-    dragItemId = null;
   });
 }
 
@@ -339,6 +361,7 @@ function renderTabs() {
   for (const tab of state.tabs) {
     const row = document.createElement("div");
     row.className = "row" + (tab.active ? " active-tab" : "");
+    row.draggable = true;
     row.appendChild(faviconEl(tab.url, tab.favIconUrl));
 
     const label = document.createElement("span");
@@ -368,6 +391,29 @@ function renderTabs() {
     );
 
     row.addEventListener("click", () => send({ type: "activateTab", tabId: tab.id }));
+
+    // DnD: タブの並び替え & Pin エリアへのドロップによる Pin 化
+    row.addEventListener("dragstart", (e) => {
+      dragTabId = tab.id;
+      dragItemId = null;
+      e.dataTransfer.effectAllowed = "move";
+    });
+    row.addEventListener("dragend", () => { dragTabId = null; });
+    // 同エリア内でのドロップ: ブラウザのタブ順序を変更
+    row.addEventListener("dragover", (e) => {
+      if (!dragTabId || dragTabId === tab.id) return;
+      e.preventDefault();
+      row.classList.add("drag-over");
+    });
+    row.addEventListener("dragleave", () => row.classList.remove("drag-over"));
+    row.addEventListener("drop", (e) => {
+      e.preventDefault();
+      row.classList.remove("drag-over");
+      if (!dragTabId || dragTabId === tab.id) return;
+      send({ type: "moveTab", tabId: dragTabId, targetIndex: tab.index });
+      dragTabId = null;
+    });
+
     els.tabList.appendChild(row);
   }
 }

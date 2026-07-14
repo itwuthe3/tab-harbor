@@ -319,6 +319,12 @@ body {
   color: var(--fg-dim);
   font-size: 12px;
   line-height: 1.6;
+  border-radius: var(--radius);
+}
+
+.empty-hint.drag-over {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  outline: 1px dashed var(--accent);
 }
 
 /* ---------- buttons ---------- */
