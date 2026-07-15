@@ -1,5 +1,5 @@
 // Arc 風 Pinned Tab: タブ束縛 / ページ内遷移追従 / タブだけ閉じる / カスタム名の固定
-import { launch, openPanel, check, finish, sleep, tmpdir, writePage, labels } from "./helper.mjs";
+import { launch, openPanel, check, finish, sleep, tmpdir, writePage, labels, msg } from "./helper.mjs";
 
 const dir = tmpdir();
 const { ctx, sw, extId } = await launch();
@@ -20,7 +20,7 @@ const activeUrl = () => sw.evaluate(async () => (await chrome.tabs.query({ activ
 // --- 1. Pin 化で束縛され、タブ一覧から消える ------------------------------------
 const docsTabRow = panel.locator("#tab-list .row", { hasText: "Docs" }).first();
 await docsTabRow.hover();
-await docsTabRow.locator('[title="この Space に Pin する"]').click();
+await docsTabRow.locator(`[title="${await msg(panel, "pinToSpaceTitle")}"]`).click();
 await sleep(700);
 check(
   "Pin 化: タブ一覧から消え live 表示",
@@ -52,7 +52,7 @@ check("🔍 遷移後クリック: 同じタブへ(新規タブなし)", (await 
 // --- 4. タブだけ閉じる(－)-------------------------------------------------------
 const pinRow = panel.locator("#pin-list .row.pin-row");
 await pinRow.hover();
-await pinRow.locator('[title^="タブを閉じる"]').click();
+await pinRow.locator(`[title="${await msg(panel, "closeTabKeepPin")}"]`).click();
 await sleep(800);
 check(
   "－で閉じる: Pin は残り live 解除",
@@ -68,7 +68,7 @@ check("再クリック: Pin の URL で再束縛", (await activeUrl()).includes(
 
 // --- 6. ✎ でカスタム名を固定(ライブタイトルより優先)----------------------------
 await pinRow.hover();
-await pinRow.locator('[title^="Pin 名を編集"]').click();
+await pinRow.locator(`[title^="${await msg(panel, "editPinTitle")}"]`).click();
 await sleep(300);
 await panel.fill(".pin-rename-input", "My Docs");
 await panel.press(".pin-rename-input", "Enter");
@@ -86,7 +86,7 @@ check("🔍 遷移してもカスタム名が優先", (await panel.textContent("
 
 // 空でリネームするとライブタイトルに戻る
 await pinRow.hover();
-await pinRow.locator('[title^="Pin 名を編集"]').click();
+await pinRow.locator(`[title^="${await msg(panel, "editPinTitle")}"]`).click();
 await sleep(300);
 await panel.fill(".pin-rename-input", "");
 await panel.press(".pin-rename-input", "Enter");

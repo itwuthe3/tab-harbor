@@ -29,6 +29,7 @@ Edge と Chrome は同一の拡張 API(`sidePanel` / `tabs` / `tabGroups`)を持
   残りは「以前のタブ n 件を復元」バーからワンクリックで復元(または破棄)。
   タブを大量に開き直さないのでメモリに優しい
 - **タブのドラッグ操作** — タブ一覧内の並び替え、Pin エリアへのドロップで Pin 化
+- **多言語対応** — 日本語 / 英語(ブラウザの UI 言語に追従。`_locales` + `chrome.i18n`)
 - **ショートカット** — `Alt+Shift+H` サイドバー開閉 / `Alt+Shift+.` 次の Space /
   `Alt+Shift+,` 前の Space
 - **Arc からインポート** — ヘッダーの 📥 から Arc の `StorableSidebar.json`

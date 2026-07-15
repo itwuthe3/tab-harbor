@@ -1,0 +1,93 @@
+{
+  "extDescription": { "message": "Arc-style sidebar tab manager: pinned tabs and Spaces for Edge / Chrome" },
+  "actionTitle": { "message": "Open Tab Harbor" },
+  "cmdOpenPanel": { "message": "Open the sidebar" },
+  "cmdNextSpace": { "message": "Switch to next Space" },
+  "cmdPrevSpace": { "message": "Switch to previous Space" },
+
+  "tabsLabel": { "message": "Tabs" },
+  "importArcTitle": { "message": "Import from Arc" },
+  "editSpaceTitle": { "message": "Edit Space" },
+  "newFolderBtn": { "message": "+ Folder" },
+  "createFolderTitle": { "message": "Create a folder" },
+  "createGlobalFolderTitle": { "message": "Create a Global Pin folder" },
+  "pinCurrentBtn": { "message": "+ Current tab" },
+  "pinCurrentTitle": { "message": "Pin the current tab" },
+  "globalPinCurrentTitle": { "message": "Add the current tab to Global Pins" },
+  "newTabBtn": { "message": "+ New tab" },
+  "newTabTitle": { "message": "Open a new tab in this Space" },
+
+  "dialogNewSpace": { "message": "New Space" },
+  "dialogEditSpace": { "message": "Edit Space" },
+  "labelName": { "message": "Name" },
+  "labelThemeColor": { "message": "Theme color" },
+  "btnDelete": { "message": "Delete" },
+  "btnCancel": { "message": "Cancel" },
+  "btnSave": { "message": "Save" },
+  "btnClose": { "message": "Close" },
+  "btnImport": { "message": "Import" },
+  "confirmDeleteSpace": { "message": "Really delete (closes its tabs)" },
+  "dialogNewFolder": { "message": "New folder" },
+  "dialogRenameFolder": { "message": "Rename folder" },
+  "dialogEditPin": { "message": "Edit pin" },
+  "labelPinName": { "message": "Name (leave empty to use the page title)" },
+  "pinNamePlaceholder": { "message": "Use the page title automatically" },
+  "labelUrl": { "message": "URL" },
+
+  "addSpaceTitle": { "message": "Create a new Space" },
+  "gpEmptyHint": { "message": "Drop a tab here, or use \"+ Current tab\"" },
+  "folderTooltip": {
+    "message": "$TITLE$ ($COUNT$ items)",
+    "placeholders": {
+      "title": { "content": "$1" },
+      "count": { "content": "$2" }
+    }
+  },
+  "pinsEmptyHint": { "message": "No pins yet. Use \"+ Current tab\" or drop a tab here." },
+  "editPinTitle": { "message": "Rename pin" },
+  "editPinTitleReset": { "message": "Rename pin (save empty to reset)" },
+  "closeTabKeepPin": { "message": "Close tab (the pin stays)" },
+  "unpinTitle": { "message": "Unpin" },
+  "removeFolderTitle": { "message": "Delete folder and its contents" },
+  "confirmAgainTitle": { "message": "Click again to delete" },
+  "restoreTabs": {
+    "message": "Restore $COUNT$ previous tabs",
+    "placeholders": { "count": { "content": "$1" } }
+  },
+  "discardTitle": { "message": "Discard" },
+  "noTabsHint": { "message": "No tabs in this Space." },
+  "untitled": { "message": "(untitled)" },
+  "pinToSpaceTitle": { "message": "Pin to this Space" },
+  "closeTabTitle": { "message": "Close tab" },
+
+  "menuRenameFolder": { "message": "Rename folder" },
+  "menuEditPin": { "message": "Edit pin (name & URL)" },
+  "menuDeleteFolder": { "message": "Delete folder (with contents)" },
+  "menuDelete": { "message": "Delete" },
+
+  "importErrRead": { "message": "Could not read the file. Please choose Arc's StorableSidebar.json." },
+  "importNoSpaces": { "message": "No Spaces were found in this file." },
+  "importCounts": {
+    "message": "Pins $PINS$ / Tabs $TABS$",
+    "placeholders": {
+      "pins": { "content": "$1" },
+      "tabs": { "content": "$2" }
+    }
+  },
+  "importNote": { "message": "Pins are merged into Spaces with the same name (duplicate URLs are skipped). Folder structure is preserved." },
+  "importDone": {
+    "message": "Import complete: $CREATED$ new Spaces / $MERGED$ merged / $PINS$ pins added",
+    "placeholders": {
+      "created": { "content": "$1" },
+      "merged": { "content": "$2" },
+      "pins": { "content": "$3" }
+    }
+  },
+  "importFailed": {
+    "message": "Import failed: $ERROR$",
+    "placeholders": { "error": { "content": "$1" } }
+  },
+  "unknownError": { "message": "Unknown error" },
+
+  "defaultFolderName": { "message": "Folder" }
+}

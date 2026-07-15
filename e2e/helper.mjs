@@ -62,6 +62,15 @@ export async function openPanel(ctx, extId, errors) {
 export const labels = (panel, sel) =>
   panel.$$eval(sel + " .label", (els) => els.map((e) => e.textContent));
 
+// 拡張の i18n メッセージを実行中のページ / SW から取得する。
+// テスト側で文言をハードコードしない(ブラウザの UI ロケールに依存しない)ため。
+export function msg(pageOrWorker, key, ...subs) {
+  return pageOrWorker.evaluate(
+    ([k, s]) => chrome.i18n.getMessage(k, s),
+    [key, subs.map(String)]
+  );
+}
+
 export async function finish(ctx, errors) {
   if (errors) {
     check("パネルの JS エラーなし", errors.length === 0, errors.join(" | ").slice(0, 250));

@@ -1,0 +1,93 @@
+{
+  "extDescription": { "message": "Arc 風サイドバー: Pin と Space でタブを管理する Edge / Chrome 拡張" },
+  "actionTitle": { "message": "Tab Harbor を開く" },
+  "cmdOpenPanel": { "message": "サイドバーを開く" },
+  "cmdNextSpace": { "message": "次の Space に切り替え" },
+  "cmdPrevSpace": { "message": "前の Space に切り替え" },
+
+  "tabsLabel": { "message": "タブ" },
+  "importArcTitle": { "message": "Arc からインポート" },
+  "editSpaceTitle": { "message": "Space を編集" },
+  "newFolderBtn": { "message": "＋ フォルダ" },
+  "createFolderTitle": { "message": "フォルダを作成" },
+  "createGlobalFolderTitle": { "message": "Global Pin のフォルダを作成" },
+  "pinCurrentBtn": { "message": "＋ 現在のタブ" },
+  "pinCurrentTitle": { "message": "現在のタブを Pin に追加" },
+  "globalPinCurrentTitle": { "message": "現在のタブを Global Pin に追加" },
+  "newTabBtn": { "message": "＋ 新しいタブ" },
+  "newTabTitle": { "message": "この Space に新しいタブを開く" },
+
+  "dialogNewSpace": { "message": "新しい Space" },
+  "dialogEditSpace": { "message": "Space を編集" },
+  "labelName": { "message": "名前" },
+  "labelThemeColor": { "message": "テーマ色" },
+  "btnDelete": { "message": "削除" },
+  "btnCancel": { "message": "キャンセル" },
+  "btnSave": { "message": "保存" },
+  "btnClose": { "message": "閉じる" },
+  "btnImport": { "message": "インポート" },
+  "confirmDeleteSpace": { "message": "本当に削除(タブも閉じる)" },
+  "dialogNewFolder": { "message": "新しいフォルダ" },
+  "dialogRenameFolder": { "message": "フォルダ名を変更" },
+  "dialogEditPin": { "message": "Pin を編集" },
+  "labelPinName": { "message": "名前(空で元のタイトルに戻す)" },
+  "pinNamePlaceholder": { "message": "タイトルを自動取得" },
+  "labelUrl": { "message": "URL" },
+
+  "addSpaceTitle": { "message": "新しい Space を作成" },
+  "gpEmptyHint": { "message": "タブをドロップ、または「＋ 現在のタブ」で追加" },
+  "folderTooltip": {
+    "message": "$TITLE$($COUNT$ 件)",
+    "placeholders": {
+      "title": { "content": "$1" },
+      "count": { "content": "$2" }
+    }
+  },
+  "pinsEmptyHint": { "message": "Pin はまだありません。「＋ 現在のタブ」で追加、またはタブをここへドロップ。" },
+  "editPinTitle": { "message": "Pin 名を編集" },
+  "editPinTitleReset": { "message": "Pin 名を編集(空で保存するとリセット)" },
+  "closeTabKeepPin": { "message": "タブを閉じる(Pin は残る)" },
+  "unpinTitle": { "message": "Pin を外す" },
+  "removeFolderTitle": { "message": "フォルダを中身ごと削除" },
+  "confirmAgainTitle": { "message": "もう一度クリックで削除" },
+  "restoreTabs": {
+    "message": "以前のタブ $COUNT$ 件を復元",
+    "placeholders": { "count": { "content": "$1" } }
+  },
+  "discardTitle": { "message": "破棄する" },
+  "noTabsHint": { "message": "この Space にタブはありません。" },
+  "untitled": { "message": "(無題)" },
+  "pinToSpaceTitle": { "message": "この Space に Pin する" },
+  "closeTabTitle": { "message": "タブを閉じる" },
+
+  "menuRenameFolder": { "message": "フォルダ名を変更" },
+  "menuEditPin": { "message": "Pin を編集(名前・URL)" },
+  "menuDeleteFolder": { "message": "フォルダを削除(中身ごと)" },
+  "menuDelete": { "message": "削除" },
+
+  "importErrRead": { "message": "ファイルを読み取れませんでした。Arc の StorableSidebar.json を選んでください。" },
+  "importNoSpaces": { "message": "このファイルに Space が見つかりませんでした。" },
+  "importCounts": {
+    "message": "Pin $PINS$ / タブ $TABS$",
+    "placeholders": {
+      "pins": { "content": "$1" },
+      "tabs": { "content": "$2" }
+    }
+  },
+  "importNote": { "message": "同名の Space には Pin を統合します(重複 URL はスキップ)。フォルダ構造は保持されます。" },
+  "importDone": {
+    "message": "インポート完了: Space 新規 $CREATED$ / 統合 $MERGED$ / Pin 追加 $PINS$",
+    "placeholders": {
+      "created": { "content": "$1" },
+      "merged": { "content": "$2" },
+      "pins": { "content": "$3" }
+    }
+  },
+  "importFailed": {
+    "message": "インポートに失敗しました: $ERROR$",
+    "placeholders": { "error": { "content": "$1" } }
+  },
+  "unknownError": { "message": "不明なエラー" },
+
+  "defaultFolderName": { "message": "フォルダ" }
+}

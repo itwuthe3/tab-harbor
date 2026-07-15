@@ -1,6 +1,6 @@
 // Pin フォルダ: 作成(デフォルト折りたたみ)/ DnD 出し入れ / リネーム / 2 段階削除
 // パネルの DnD ハンドラは dataTransfer 非依存のため dragstart/drop の合成イベントで駆動できる
-import { launch, openPanel, check, finish, sleep, tmpdir, writePage, labels } from "./helper.mjs";
+import { launch, openPanel, check, finish, sleep, tmpdir, writePage, labels, msg } from "./helper.mjs";
 
 const dir = tmpdir();
 const { ctx, sw, extId } = await launch();
@@ -15,10 +15,11 @@ await sleep(1200);
 const panel = await openPanel(ctx, extId, errors);
 
 // 2 つのタブを Pin 化
+const pinToSpace = await msg(panel, "pinToSpaceTitle");
 for (const name of ["Doc A", "Doc B"]) {
   const row = panel.locator("#tab-list .row", { hasText: name }).first();
   await row.hover();
-  await row.locator('[title="この Space に Pin する"]').click();
+  await row.locator(`[title="${pinToSpace}"]`).click();
   await sleep(500);
 }
 check("準備: Pin が 2 件", (await labels(panel, "#pin-list")).length === 2);

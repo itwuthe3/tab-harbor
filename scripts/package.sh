@@ -8,7 +8,7 @@ mkdir -p dist
 OUT="dist/tab-harbor-${VERSION}.zip"
 rm -f "$OUT"
 
-zip -r "$OUT" manifest.json background.js sidepanel icons -x "*.DS_Store"
+zip -r "$OUT" manifest.json background.js sidepanel icons _locales -x "*.DS_Store"
 
 echo
 echo "created: $OUT"

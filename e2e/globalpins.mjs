@@ -1,6 +1,6 @@
 // Global Pin: 全 Space 共通のアイコングリッド / クリックでフォーカス /
 // コンテキストメニュー削除 / Space Pin からのドラッグ移動(transferPin)
-import { launch, openPanel, check, finish, sleep, tmpdir, writePage, labels } from "./helper.mjs";
+import { launch, openPanel, check, finish, sleep, tmpdir, writePage, labels, msg } from "./helper.mjs";
 
 const dir = tmpdir();
 const { ctx, sw, extId } = await launch();
@@ -42,7 +42,7 @@ check("クリック: Site A のタブにフォーカス", (await activeUrl()).in
 await panel.locator("#global-pin-list .gp-icon").click({ button: "right" });
 await sleep(300);
 const menuItems = await panel.$$eval(".context-menu .context-menu-item", (els) => els.map((e) => e.textContent));
-check("🔍 コンテキストメニューが出る", menuItems.some((t) => t.includes("編集")) && menuItems.some((t) => t.includes("削除")), JSON.stringify(menuItems));
+check("🔍 コンテキストメニューが出る", menuItems.includes(await msg(panel, "menuEditPin")) && menuItems.includes(await msg(panel, "menuDelete")), JSON.stringify(menuItems));
 await panel.locator(".context-menu .context-menu-item.danger").click();
 await sleep(700);
 check("🔍 削除: アイコンが消え、タブ一覧に Site A が戻る", (await gpCount()) === 0 && (await labels(panel, "#tab-list")).some((t) => t.includes("Site A")));
@@ -50,7 +50,7 @@ check("🔍 削除: アイコンが消え、タブ一覧に Site A が戻る", (
 // --- 5. Space Pin をドラッグで Global Pin へ移動(transferPin)---------------------
 const siteBRow = panel.locator("#tab-list .row", { hasText: "Site B" }).first();
 await siteBRow.hover();
-await siteBRow.locator('[title="この Space に Pin する"]').click();
+await siteBRow.locator(`[title="${await msg(panel, "pinToSpaceTitle")}"]`).click();
 await sleep(700);
 check("準備: Site B を Space Pin 化", (await labels(panel, "#pin-list")).some((t) => t.includes("Site B")));
 

@@ -60,6 +60,11 @@ function isArcObj(v) {
   return v !== null && typeof v === "object" && !Array.isArray(v);
 }
 
+// フォルダ名の既定値。node からパーサー単体で実行される場合は chrome が無いのでガードする
+function arcFolderFallback() {
+  return globalThis.chrome?.i18n?.getMessage("defaultFolderName") || "Folder";
+}
+
 // ["key", value, "key", value, ...] 形式を Map にする
 function arcKvList(arr) {
   const map = new Map();
@@ -99,7 +104,7 @@ function collectArcItems(rootId, byId, childrenOf) {
     const childItems = children.flatMap(build);
     if (item && isArcObj(item.data) && isArcObj(item.data.list)) {
       return childItems.length
-        ? [{ title: String(item.title || "フォルダ"), children: childItems }]
+        ? [{ title: String(item.title || arcFolderFallback()), children: childItems }]
         : [];
     }
     return childItems;

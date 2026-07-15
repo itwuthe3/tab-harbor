@@ -6,7 +6,10 @@
 
 - **名前**: Tab Harbor
 - **カテゴリ**: Chrome「仕事効率化 › ワークフローと計画」/ Edge「Productivity」
-- **言語**: 日本語 + English
+- **言語**: 日本語 + English(v0.1.3 から拡張本体が `_locales` で日英対応。
+  Chrome のストア掲載言語はパッケージの `_locales` に連動するため、
+  0.1.3 以降のパッケージをアップロードするとダッシュボードの掲載情報タブに
+  en / ja の言語切替が現れる。Edge は Store listings の「言語の追加」から自由に追加可)
 - **サポート URL**: https://github.com/itwuthe3/tab-harbor
 - **プライバシーポリシー URL**: https://github.com/itwuthe3/tab-harbor/blob/main/PRIVACY.md
 - **検索キーワード(Edge・日本語リスティング)**: タブ管理、サイドバー、タブグループ、
@@ -145,9 +148,9 @@ English:
 
 > Tab Harbor is a tab manager in the browser side panel. No account or sign-in is
 > needed to test any feature. All data stays in browser storage, nothing is sent
-> to any server, and no remote code is used. The UI is in Japanese. The source
-> code is public on GitHub (repository tab-harbor by user itwuthe, digit three,
-> no spaces).
+> to any server, and no remote code is used. The UI is available in English and
+> Japanese, following the browser UI language. The source code is public on
+> GitHub (repository tab-harbor by user itwuthe, digit three, no spaces).
 >
 > How to test. Click the toolbar icon to open the side panel. Existing tabs are
 > grouped into a default Space named Home, which is a normal tab group.

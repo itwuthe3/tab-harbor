@@ -1,6 +1,6 @@
 // 遅延復元: グループ消失後の Space 切替は先頭 1 タブのみ復元し、
 // 残りは復元バー(復元 / 破棄)で扱う
-import { launch, openPanel, check, finish, sleep, tmpdir, writePage } from "./helper.mjs";
+import { launch, openPanel, check, finish, sleep, tmpdir, writePage, msg } from "./helper.mjs";
 
 const dir = tmpdir();
 const { ctx, sw, extId } = await launch();
@@ -46,7 +46,7 @@ await sleep(2000);
 let tabs = await workTabs();
 const barText = await panel.textContent(".restore-bar .restore-btn").catch(() => "");
 check("遅延復元: 先頭 1 タブのみ即時復元", tabs.length === 1, JSON.stringify(tabs));
-check("復元バー: 残り件数を表示", /以前のタブ \d+ 件を復元/.test(barText), barText);
+check("復元バー: 残り件数を表示", barText === (await msg(panel, "restoreTabs", "2")), barText);
 
 // --- 2. 復元ボタン → 全タブが戻りバーが消える --------------------------------------
 await panel.click(".restore-bar .restore-btn");

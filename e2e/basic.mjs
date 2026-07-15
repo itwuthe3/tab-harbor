@@ -1,5 +1,5 @@
 // 基本フロー: 初期収容 / Pin / Space 作成・切替・削除 / タブ操作 / 永続化
-import { launch, openPanel, check, finish, sleep, tmpdir, writePage, labels } from "./helper.mjs";
+import { launch, openPanel, check, finish, sleep, tmpdir, writePage, labels, msg } from "./helper.mjs";
 
 const dir = tmpdir();
 const { ctx, sw, extId } = await launch();
@@ -38,9 +38,10 @@ let tabLabels = await labels(panel, "#tab-list");
 check("パネル: タブ一覧に Docs / Mail", tabLabels.some((t) => t.includes("Docs")) && tabLabels.some((t) => t.includes("Mail")), JSON.stringify(tabLabels));
 
 // --- 2. Pin 追加(タブ行の 📌)------------------------------------------------
+const pinToSpace = await msg(panel, "pinToSpaceTitle");
 const docsRow = panel.locator("#tab-list .row", { hasText: "Docs" }).first();
 await docsRow.hover();
-await docsRow.locator('[title="この Space に Pin する"]').click();
+await docsRow.locator(`[title="${pinToSpace}"]`).click();
 await sleep(600);
 let pinLabels = await labels(panel, "#pin-list");
 check("Pin 追加: Docs が Pin 一覧に出る", pinLabels.some((t) => t.includes("Docs")), JSON.stringify(pinLabels));

@@ -603,9 +603,10 @@ async function transferPin(fromSpaceId, toSpaceId, itemId, targetFolderId, targe
 async function createFolder(spaceId, title) {
   const ctx = await getPinsContext(spaceId);
   if (!ctx) return;
+  const fallback = chrome.i18n.getMessage("defaultFolderName") || "Folder";
   ctx.pins.push({
     id: crypto.randomUUID(),
-    title: String(title || "フォルダ").trim().slice(0, 80) || "フォルダ",
+    title: String(title || fallback).trim().slice(0, 80) || fallback,
     children: [],
     collapsed: true,
   });
@@ -770,7 +771,8 @@ async function importSpaces(imported) {
 function mergeImportedItems(target, imported, haveUrls, summary) {
   for (const item of imported) {
     if (item && Array.isArray(item.children)) {
-      const title = String(item.title ?? "フォルダ").trim().slice(0, 80) || "フォルダ";
+      const fallback = chrome.i18n.getMessage("defaultFolderName") || "Folder";
+      const title = String(item.title ?? fallback).trim().slice(0, 80) || fallback;
       let folder = target.find((t) => isFolder(t) && t.title === title);
       let created = false;
       if (!folder) {

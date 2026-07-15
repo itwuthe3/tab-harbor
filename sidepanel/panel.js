@@ -14,6 +14,16 @@ const GROUP_COLOR_HEX = {
 };
 
 const $ = (sel) => document.querySelector(sel);
+
+// i18n: メッセージ未定義時はキーをそのまま返す(取りこぼしに気づけるように)
+const t = (key, ...subs) => chrome.i18n.getMessage(key, subs.map(String)) || key;
+
+// data-i18n / data-i18n-title / data-i18n-placeholder を持つ静的要素を翻訳する
+function localizeHtml() {
+  for (const el of document.querySelectorAll("[data-i18n]")) el.textContent = t(el.dataset.i18n);
+  for (const el of document.querySelectorAll("[data-i18n-title]")) el.title = t(el.dataset.i18nTitle);
+  for (const el of document.querySelectorAll("[data-i18n-placeholder]")) el.placeholder = t(el.dataset.i18nPlaceholder);
+}
 const els = {
   spaceDot: $("#space-dot"),
   spaceName: $("#space-name"),
@@ -72,6 +82,7 @@ async function init() {
   chrome.runtime.onMessage.addListener((msg) => {
     if (msg?.type === "harbor:changed") refreshSoon();
   });
+  localizeHtml();
   bindStaticHandlers();
   buildSwatches();
   await refresh();
@@ -138,7 +149,7 @@ function renderChips() {
   const add = document.createElement("button");
   add.className = "chip add";
   add.textContent = "+";
-  add.title = "新しい Space を作成";
+  add.title = t("addSpaceTitle");
   add.addEventListener("click", () => openDialog("create"));
   els.chips.appendChild(add);
 }
@@ -152,7 +163,7 @@ function renderGlobalPins() {
 
   if (!items.length) {
     strip.classList.add("empty");
-    strip.textContent = "タブをドロップ、または「＋ 現在のタブ」で追加";
+    strip.textContent = t("gpEmptyHint");
     strip.addEventListener("dragover", (e) => {
       if (!dragTabId && !dragItemId) return;
       e.preventDefault();
@@ -229,7 +240,7 @@ function globalPinIcon(pin, containerId, index) {
 function globalFolderIcon(folder, containerId, index) {
   const btn = document.createElement("button");
   btn.className = "gp-icon";
-  btn.title = `${folder.title} (${countPins(folder.children)}件)`;
+  btn.title = t("folderTooltip", folder.title, countPins(folder.children));
   btn.draggable = true;
 
   const icon = document.createElement("span");
@@ -256,7 +267,7 @@ function renderPins() {
   if (!state.pins.length) {
     const hint = document.createElement("div");
     hint.className = "empty-hint";
-    hint.textContent = "Pin はまだありません。「＋ 現在のタブ」で追加、またはタブをここへドロップ。";
+    hint.textContent = t("pinsEmptyHint");
     // Pin が 0 件のときはヒント全体をドロップ受け皿にする
     hint.addEventListener("dragover", (e) => {
       if (!dragTabId && !dragItemId) return;
@@ -338,7 +349,7 @@ function pinRow(pin, containerId, index, depth, spaceId) {
   row.appendChild(label);
 
   row.appendChild(
-    rowButton("✎", pin.customTitle ? "Pin 名を編集(空で保存するとリセット)" : "Pin 名を編集", (e) => {
+    rowButton("✎", pin.customTitle ? t("editPinTitleReset") : t("editPinTitle"), (e) => {
       e.stopPropagation();
       startPinRename(pin, label, row, spaceId);
     }, "rename")
@@ -346,14 +357,14 @@ function pinRow(pin, containerId, index, depth, spaceId) {
 
   if (pin.tabId) {
     row.appendChild(
-      rowButton("－", "タブを閉じる(Pin は残る)", (e) => {
+      rowButton("－", t("closeTabKeepPin"), (e) => {
         e.stopPropagation();
         send({ type: "closeTab", tabId: pin.tabId });
       })
     );
   }
   row.appendChild(
-    rowButton("×", "Pin を外す", (e) => {
+    rowButton("×", t("unpinTitle"), (e) => {
       e.stopPropagation();
       send({ type: "removeItem", spaceId, itemId: pin.id });
     })
@@ -450,11 +461,11 @@ function folderRow(folder, containerId, index, depth, listEl, spaceId) {
   row.appendChild(badge);
 
   // フォルダ削除は中身ごと消えるため 2 段階クリック(2 秒で解除)
-  const removeBtn = rowButton("×", "フォルダを中身ごと削除", (e) => {
+  const removeBtn = rowButton("×", t("removeFolderTitle"), (e) => {
     e.stopPropagation();
     if (!removeBtn.classList.contains("confirming")) {
       removeBtn.classList.add("confirming");
-      removeBtn.title = "もう一度クリックで削除";
+      removeBtn.title = t("confirmAgainTitle");
       setTimeout(() => removeBtn.classList.remove("confirming"), 2000);
       return;
     }
@@ -530,14 +541,14 @@ function renderTabs() {
     wrap.className = "restore-bar";
     const restoreBtn = document.createElement("button");
     restoreBtn.className = "restore-btn";
-    restoreBtn.textContent = `以前のタブ ${state.pendingRestoreCount} 件を復元`;
+    restoreBtn.textContent = t("restoreTabs", state.pendingRestoreCount);
     restoreBtn.addEventListener("click", () =>
       send({ type: "restoreSavedTabs", windowId, spaceId: state.activeSpaceId })
     );
     const discardBtn = document.createElement("button");
     discardBtn.className = "restore-discard";
     discardBtn.textContent = "×";
-    discardBtn.title = "破棄する";
+    discardBtn.title = t("discardTitle");
     discardBtn.addEventListener("click", () =>
       send({ type: "discardSavedTabs", spaceId: state.activeSpaceId })
     );
@@ -548,7 +559,7 @@ function renderTabs() {
   if (!state.tabs.length) {
     const hint = document.createElement("div");
     hint.className = "empty-hint";
-    hint.textContent = "この Space にタブはありません。";
+    hint.textContent = t("noTabsHint");
     els.tabList.appendChild(hint);
     return;
   }
@@ -560,7 +571,7 @@ function renderTabs() {
 
     const label = document.createElement("span");
     label.className = "label";
-    label.textContent = tab.title || "(無題)";
+    label.textContent = tab.title || t("untitled");
     label.title = tab.title;
     row.appendChild(label);
 
@@ -572,13 +583,13 @@ function renderTabs() {
     }
 
     row.appendChild(
-      rowButton("📌", "この Space に Pin する", (e) => {
+      rowButton("📌", t("pinToSpaceTitle"), (e) => {
         e.stopPropagation();
         send({ type: "pinTab", spaceId: state.activeSpaceId, tabId: tab.id });
       })
     );
     row.appendChild(
-      rowButton("×", "タブを閉じる", (e) => {
+      rowButton("×", t("closeTabTitle"), (e) => {
         e.stopPropagation();
         send({ type: "closeTab", tabId: tab.id });
       }, "close")
@@ -691,7 +702,7 @@ function showGpContextMenu(e, item, spaceId) {
 
   const renameBtn = document.createElement("button");
   renameBtn.className = "context-menu-item";
-  renameBtn.textContent = isFolder ? "フォルダ名を変更" : "Pin を編集(名前・URL)";
+  renameBtn.textContent = isFolder ? t("menuRenameFolder") : t("menuEditPin");
   renameBtn.addEventListener("click", () => {
     hideGpContextMenu();
     if (isFolder) {
@@ -704,7 +715,7 @@ function showGpContextMenu(e, item, spaceId) {
 
   const deleteBtn = document.createElement("button");
   deleteBtn.className = "context-menu-item danger";
-  deleteBtn.textContent = isFolder ? "フォルダを削除(中身ごと)" : "削除";
+  deleteBtn.textContent = isFolder ? t("menuDeleteFolder") : t("menuDelete");
   deleteBtn.addEventListener("click", () => {
     hideGpContextMenu();
     send({ type: "removeItem", spaceId, itemId: item.id });
@@ -740,13 +751,13 @@ function showSpacePinContextMenu(e, pin, spaceId) {
 
   const editBtn = document.createElement("button");
   editBtn.className = "context-menu-item";
-  editBtn.textContent = "Pin を編集(名前・URL)";
+  editBtn.textContent = t("menuEditPin");
   editBtn.addEventListener("click", () => { hideGpContextMenu(); openPinEditDialog(pin, spaceId); });
   menu.appendChild(editBtn);
 
   const deleteBtn = document.createElement("button");
   deleteBtn.className = "context-menu-item danger";
-  deleteBtn.textContent = "削除";
+  deleteBtn.textContent = t("menuDelete");
   deleteBtn.addEventListener("click", () => {
     hideGpContextMenu();
     send({ type: "removeItem", spaceId, itemId: pin.id });
@@ -796,18 +807,18 @@ function openDialog(mode) {
   dialogMode = mode;
   const active = state?.spaces.find((s) => s.id === state.activeSpaceId);
   if (mode === "edit" && active) {
-    els.dialogTitle.textContent = "Space を編集";
+    els.dialogTitle.textContent = t("dialogEditSpace");
     els.nameInput.value = active.name;
     selectColor(active.color);
     els.deleteBtn.hidden = state.spaces.length <= 1;
   } else {
-    els.dialogTitle.textContent = "新しい Space";
+    els.dialogTitle.textContent = t("dialogNewSpace");
     els.nameInput.value = "";
     selectColor("blue");
     els.deleteBtn.hidden = true;
   }
   els.deleteBtn.classList.remove("confirming");
-  els.deleteBtn.textContent = "削除";
+  els.deleteBtn.textContent = t("btnDelete");
   els.dialog.showModal();
   els.nameInput.focus();
 }
@@ -846,7 +857,7 @@ function bindStaticHandlers() {
   els.deleteBtn.addEventListener("click", () => {
     if (!els.deleteBtn.classList.contains("confirming")) {
       els.deleteBtn.classList.add("confirming");
-      els.deleteBtn.textContent = "本当に削除(タブも閉じる)";
+      els.deleteBtn.textContent = t("confirmDeleteSpace");
       return;
     }
     send({ type: "deleteSpace", windowId, spaceId: state.activeSpaceId });
@@ -895,7 +906,7 @@ function openFolderDialog(mode, folder, spaceId) {
   folderDialogState = mode === "rename"
     ? { mode, folderId: folder.id, spaceId }
     : { mode, spaceId };
-  els.folderDialogTitle.textContent = mode === "rename" ? "フォルダ名を変更" : "新しいフォルダ";
+  els.folderDialogTitle.textContent = mode === "rename" ? t("dialogRenameFolder") : t("dialogNewFolder");
   els.folderNameInput.value = mode === "rename" ? folder.title : "";
   els.folderDialog.showModal();
   els.folderNameInput.focus();
@@ -945,12 +956,10 @@ function bindImportHandlers() {
 
 function renderImportPreview(error) {
   els.importBody.replaceChildren();
-  els.importCancel.textContent = "キャンセル";
+  els.importCancel.textContent = t("btnCancel");
   if (error || !pendingImport?.length) {
     const p = document.createElement("p");
-    p.textContent = error
-      ? "ファイルを読み取れませんでした。Arc の StorableSidebar.json を選んでください。"
-      : "このファイルに Space が見つかりませんでした。";
+    p.textContent = error ? t("importErrRead") : t("importNoSpaces");
     els.importBody.appendChild(p);
     els.importConfirm.hidden = true;
     return;
@@ -966,14 +975,13 @@ function renderImportPreview(error) {
     name.textContent = space.name;
     const counts = document.createElement("span");
     counts.className = "counts";
-    counts.textContent = `Pin ${countPins(space.pins)} / タブ ${space.savedTabs.length}`;
+    counts.textContent = t("importCounts", countPins(space.pins), space.savedTabs.length);
     row.append(dot, name, counts);
     els.importBody.appendChild(row);
   }
   const note = document.createElement("p");
   note.className = "import-note";
-  note.textContent =
-    "同名の Space には Pin を統合します(重複 URL はスキップ)。フォルダはフラット展開されます。";
+  note.textContent = t("importNote");
   els.importBody.appendChild(note);
 }
 
@@ -981,10 +989,10 @@ function renderImportResult(result) {
   els.importBody.replaceChildren();
   const p = document.createElement("p");
   p.textContent = result && !result.error
-    ? `インポート完了: Space 新規 ${result.created} / 統合 ${result.merged} / Pin 追加 ${result.pinsAdded}`
-    : "インポートに失敗しました: " + (result?.error ?? "不明なエラー");
+    ? t("importDone", result.created, result.merged, result.pinsAdded)
+    : t("importFailed", result?.error ?? t("unknownError"));
   els.importBody.appendChild(p);
   els.importConfirm.hidden = true;
-  els.importCancel.textContent = "閉じる";
+  els.importCancel.textContent = t("btnClose");
   pendingImport = null;
 }

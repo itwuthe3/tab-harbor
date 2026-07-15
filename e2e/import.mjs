@@ -1,7 +1,7 @@
 // Arc インポート: プレビュー / フォルダ構造保持(デフォルト折りたたみ)/ 再インポート統合 / 異常系
 import { writeFileSync } from "node:fs";
 import path from "node:path";
-import { launch, openPanel, check, finish, sleep, tmpdir, labels } from "./helper.mjs";
+import { launch, openPanel, check, finish, sleep, tmpdir, labels, msg } from "./helper.mjs";
 
 const dir = tmpdir();
 const fixture = {
@@ -47,14 +47,15 @@ const panel = await openPanel(ctx, extId, errors);
 await panel.setInputFiles("#arc-file", fixturePath);
 await sleep(500);
 const preview = await panel.textContent("#import-body");
-check("プレビュー: Space 名と件数", preview.includes("Imported") && preview.includes("Pin 3") && preview.includes("タブ 1"), preview.replace(/\s+/g, " ").slice(0, 100));
+const counts31 = await msg(panel, "importCounts", "3", "1");
+check("プレビュー: Space 名と件数", preview.includes("Imported") && preview.includes(counts31), preview.replace(/\s+/g, " ").slice(0, 100));
 check("プレビュー: 無名 Space はデフォルト名", preview.includes("Arc 2"));
 
 // --- 2. インポート実行 -----------------------------------------------------------
 await panel.click("#import-confirm");
 await sleep(1200);
 const result = await panel.textContent("#import-body");
-check("実行結果: 新規 2 / Pin 追加 4", result.includes("新規 2") && result.includes("Pin 追加 4"), result.trim());
+check("実行結果: 新規 2 / Pin 追加 4", result.includes(await msg(panel, "importDone", "2", "0", "4")), result.trim());
 await panel.click("#import-cancel");
 await sleep(600);
 const chips = await panel.$$eval("#space-chips .chip:not(.add)", (els) => els.map((e) => e.title));
@@ -94,7 +95,7 @@ await sleep(500);
 await panel.click("#import-confirm");
 await sleep(1200);
 const re = await panel.textContent("#import-body");
-check("🔍 再インポート: 統合 2 / Pin 追加 0", re.includes("新規 0") && re.includes("統合 2") && re.includes("Pin 追加 0"), re.trim());
+check("🔍 再インポート: 統合 2 / Pin 追加 0", re.includes(await msg(panel, "importDone", "0", "2", "0")), re.trim());
 await panel.click("#import-cancel");
 await sleep(300);
 check("🔍 再インポート: フォルダも重複しない", (await panel.$$eval("#pin-list .row.folder-row", (els) => els.length)) === 1);
@@ -103,11 +104,11 @@ check("🔍 再インポート: フォルダも重複しない", (await panel.$$
 await panel.setInputFiles("#arc-file", garbagePath);
 await sleep(500);
 const err = await panel.textContent("#import-body");
-check("🔍 壊れた JSON: エラー表示 + 実行ボタン非表示", err.includes("読み取れませんでした") && (await panel.$eval("#import-confirm", (b) => b.hidden)));
+check("🔍 壊れた JSON: エラー表示 + 実行ボタン非表示", err.includes(await msg(panel, "importErrRead")) && (await panel.$eval("#import-confirm", (b) => b.hidden)));
 await panel.click("#import-cancel");
 await panel.setInputFiles("#arc-file", emptyPath);
 await sleep(500);
-check("🔍 Space の無い JSON: 見つからない旨", (await panel.textContent("#import-body")).includes("見つかりませんでした"));
+check("🔍 Space の無い JSON: 見つからない旨", (await panel.textContent("#import-body")).includes(await msg(panel, "importNoSpaces")));
 await panel.click("#import-cancel");
 
 await finish(ctx, errors);

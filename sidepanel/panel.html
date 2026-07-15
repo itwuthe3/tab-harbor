@@ -12,8 +12,8 @@
       <div id="space-title-row">
         <span id="space-dot"></span>
         <h1 id="space-name">Tab Harbor</h1>
-        <button id="import-arc" class="icon-btn" title="Arc からインポート">📥</button>
-        <button id="edit-space" class="icon-btn" title="Space を編集">✎</button>
+        <button id="import-arc" class="icon-btn" data-i18n-title="importArcTitle" title="Arc からインポート">📥</button>
+        <button id="edit-space" class="icon-btn" data-i18n-title="editSpaceTitle" title="Space を編集">✎</button>
       </div>
       <nav id="space-chips" aria-label="Spaces"></nav>
     </header>
@@ -22,8 +22,8 @@
       <div class="section-head">
         <span class="section-label">Global Pin</span>
         <span>
-          <button id="global-new-folder" class="text-btn" title="Global フォルダを作成">＋ フォルダ</button>
-          <button id="global-pin-current" class="text-btn" title="現在のタブを Global Pin に追加">＋ 現在のタブ</button>
+          <button id="global-new-folder" class="text-btn" data-i18n="newFolderBtn" data-i18n-title="createGlobalFolderTitle" title="Global フォルダを作成">＋ フォルダ</button>
+          <button id="global-pin-current" class="text-btn" data-i18n="pinCurrentBtn" data-i18n-title="globalPinCurrentTitle" title="現在のタブを Global Pin に追加">＋ 現在のタブ</button>
         </span>
       </div>
       <div id="global-pin-list"></div>
@@ -33,8 +33,8 @@
       <div class="section-head">
         <span class="section-label">Space Pin</span>
         <span>
-          <button id="new-folder" class="text-btn" title="フォルダを作成">＋ フォルダ</button>
-          <button id="pin-current" class="text-btn" title="現在のタブを Pin に追加">＋ 現在のタブ</button>
+          <button id="new-folder" class="text-btn" data-i18n="newFolderBtn" data-i18n-title="createFolderTitle" title="フォルダを作成">＋ フォルダ</button>
+          <button id="pin-current" class="text-btn" data-i18n="pinCurrentBtn" data-i18n-title="pinCurrentTitle" title="現在のタブを Pin に追加">＋ 現在のタブ</button>
         </span>
       </div>
       <div id="pin-list"></div>
@@ -44,8 +44,8 @@
 
     <section id="tabs-section">
       <div class="section-head">
-        <span class="section-label">タブ</span>
-        <button id="new-tab" class="text-btn" title="この Space に新しいタブを開く">＋ 新しいタブ</button>
+        <span class="section-label" data-i18n="tabsLabel">タブ</span>
+        <button id="new-tab" class="text-btn" data-i18n="newTabBtn" data-i18n-title="newTabTitle" title="この Space に新しいタブを開く">＋ 新しいタブ</button>
       </div>
       <div id="tab-list"></div>
     </section>
@@ -54,56 +54,56 @@
 
     <dialog id="space-dialog">
       <form method="dialog" id="space-form">
-        <h2 id="dialog-title">新しい Space</h2>
-        <label for="space-name-input">名前</label>
+        <h2 id="dialog-title" data-i18n="dialogNewSpace">新しい Space</h2>
+        <label for="space-name-input" data-i18n="labelName">名前</label>
         <input id="space-name-input" type="text" maxlength="40" required autocomplete="off" />
-        <label>テーマ色</label>
+        <label data-i18n="labelThemeColor">テーマ色</label>
         <div id="color-swatches"></div>
         <div class="dialog-actions">
-          <button type="button" id="delete-space" class="danger" hidden>削除</button>
+          <button type="button" id="delete-space" class="danger" data-i18n="btnDelete" hidden>削除</button>
           <span class="spacer"></span>
-          <button type="button" id="dialog-cancel">キャンセル</button>
-          <button type="submit" id="dialog-save" class="primary">保存</button>
+          <button type="button" id="dialog-cancel" data-i18n="btnCancel">キャンセル</button>
+          <button type="submit" id="dialog-save" class="primary" data-i18n="btnSave">保存</button>
         </div>
       </form>
     </dialog>
 
     <dialog id="folder-dialog">
       <form method="dialog" id="folder-form">
-        <h2 id="folder-dialog-title">新しいフォルダ</h2>
-        <label for="folder-name-input">名前</label>
+        <h2 id="folder-dialog-title" data-i18n="dialogNewFolder">新しいフォルダ</h2>
+        <label for="folder-name-input" data-i18n="labelName">名前</label>
         <input id="folder-name-input" type="text" maxlength="80" required autocomplete="off" />
         <div class="dialog-actions">
           <span class="spacer"></span>
-          <button type="button" id="folder-cancel">キャンセル</button>
-          <button type="submit" class="primary">保存</button>
+          <button type="button" id="folder-cancel" data-i18n="btnCancel">キャンセル</button>
+          <button type="submit" class="primary" data-i18n="btnSave">保存</button>
         </div>
       </form>
     </dialog>
 
     <dialog id="pin-edit-dialog">
       <form method="dialog" id="pin-edit-form">
-        <h2>Pin を編集</h2>
-        <label for="pin-edit-name-input">名前（空で元のタイトルに戻す）</label>
-        <input id="pin-edit-name-input" type="text" maxlength="200" autocomplete="off" placeholder="タイトルを自動取得" />
-        <label for="pin-edit-url-input">URL</label>
+        <h2 data-i18n="dialogEditPin">Pin を編集</h2>
+        <label for="pin-edit-name-input" data-i18n="labelPinName">名前（空で元のタイトルに戻す）</label>
+        <input id="pin-edit-name-input" type="text" maxlength="200" autocomplete="off" data-i18n-placeholder="pinNamePlaceholder" placeholder="タイトルを自動取得" />
+        <label for="pin-edit-url-input" data-i18n="labelUrl">URL</label>
         <input id="pin-edit-url-input" type="url" required autocomplete="off" />
         <div class="dialog-actions">
           <span class="spacer"></span>
-          <button type="button" id="pin-edit-cancel">キャンセル</button>
-          <button type="submit" class="primary">保存</button>
+          <button type="button" id="pin-edit-cancel" data-i18n="btnCancel">キャンセル</button>
+          <button type="submit" class="primary" data-i18n="btnSave">保存</button>
         </div>
       </form>
     </dialog>
 
     <input type="file" id="arc-file" accept=".json,application/json" hidden />
     <dialog id="import-dialog">
-      <h2>Arc からインポート</h2>
+      <h2 data-i18n="importArcTitle">Arc からインポート</h2>
       <div id="import-body"></div>
       <div class="dialog-actions">
         <span class="spacer"></span>
-        <button type="button" id="import-cancel">キャンセル</button>
-        <button type="button" id="import-confirm" class="primary">インポート</button>
+        <button type="button" id="import-cancel" data-i18n="btnCancel">キャンセル</button>
+        <button type="button" id="import-confirm" class="primary" data-i18n="btnImport">インポート</button>
       </div>
     </dialog>
   </div>
