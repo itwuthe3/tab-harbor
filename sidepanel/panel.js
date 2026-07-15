@@ -19,6 +19,9 @@ const els = {
   spaceName: $("#space-name"),
   editSpace: $("#edit-space"),
   chips: $("#space-chips"),
+  globalPinList: $("#global-pin-list"),
+  globalPinCurrent: $("#global-pin-current"),
+  globalNewFolder: $("#global-new-folder"),
   pinList: $("#pin-list"),
   pinCurrent: $("#pin-current"),
   tabList: $("#tab-list"),
@@ -43,15 +46,23 @@ const els = {
   folderDialogTitle: $("#folder-dialog-title"),
   folderNameInput: $("#folder-name-input"),
   folderCancel: $("#folder-cancel"),
+  pinEditDialog: $("#pin-edit-dialog"),
+  pinEditForm: $("#pin-edit-form"),
+  pinEditNameInput: $("#pin-edit-name-input"),
+  pinEditUrlInput: $("#pin-edit-url-input"),
+  pinEditCancel: $("#pin-edit-cancel"),
 };
 
 let windowId = null;
 let state = null;
 let dialogMode = null; // "create" | "edit"
 let selectedColor = "blue";
-let dragItemId = null; // DnD 中の Pin / フォルダの id
-let dragTabId = null;  // DnD 中のタブ id
-let folderDialogState = null; // { mode: "create" } | { mode: "rename", folderId }
+let gpContextMenuEl = null; // 表示中のコンテキストメニュー要素
+let pinEditState = null;    // { pin, spaceId }
+let dragItemId = null;      // DnD 中の Pin / フォルダの id
+let dragItemSpaceId = null; // DnD 中のアイテムの spaceId (null = 共通 Pin)
+let dragTabId = null;       // DnD 中のタブ id
+let folderDialogState = null; // { mode, folderId?, spaceId }
 
 init();
 
@@ -106,6 +117,7 @@ function render() {
   els.spaceName.textContent = active?.name ?? "Tab Harbor";
 
   renderChips();
+  renderGlobalPins();
   renderPins();
   renderTabs();
 }
@@ -131,6 +143,114 @@ function renderChips() {
   els.chips.appendChild(add);
 }
 
+function renderGlobalPins() {
+  els.globalPinList.replaceChildren();
+  const items = state.globalPins ?? [];
+
+  const strip = document.createElement("div");
+  strip.className = "global-pin-icons";
+
+  if (!items.length) {
+    strip.classList.add("empty");
+    strip.textContent = "タブをドロップ、または「＋ 現在のタブ」で追加";
+    strip.addEventListener("dragover", (e) => {
+      if (!dragTabId && !dragItemId) return;
+      e.preventDefault();
+      strip.classList.add("drag-over");
+    });
+    strip.addEventListener("dragleave", () => strip.classList.remove("drag-over"));
+    strip.addEventListener("drop", (e) => {
+      e.preventDefault();
+      strip.classList.remove("drag-over");
+      if (dragTabId) {
+        send({ type: "pinTabAt", spaceId: null, tabId: dragTabId, targetFolderId: null, targetIndex: undefined });
+        dragTabId = null;
+      } else if (dragItemId) {
+        if (dragItemSpaceId !== null) {
+          send({ type: "transferPin", fromSpaceId: dragItemSpaceId, toSpaceId: null, itemId: dragItemId, targetFolderId: null, targetIndex: undefined });
+        }
+        dragItemId = null;
+        dragItemSpaceId = null;
+      }
+    });
+    els.globalPinList.appendChild(strip);
+    return;
+  }
+
+  renderGlobalIconLevel(items, null, strip);
+
+  const endZone = document.createElement("div");
+  endZone.className = "global-pin-end-zone";
+  bindDropTarget(endZone, () => ({ targetFolderId: null, targetIndex: undefined }), null);
+  strip.appendChild(endZone);
+
+  els.globalPinList.appendChild(strip);
+}
+
+function renderGlobalIconLevel(items, containerId, strip) {
+  items.forEach((item, index) => {
+    if (Array.isArray(item.children)) {
+      strip.appendChild(globalFolderIcon(item, containerId, index));
+      if (!item.collapsed) {
+        const sub = document.createElement("div");
+        sub.className = "gp-subfolder";
+        renderGlobalIconLevel(item.children, item.id, sub);
+        strip.appendChild(sub);
+      }
+    } else {
+      strip.appendChild(globalPinIcon(item, containerId, index));
+    }
+  });
+}
+
+function globalPinIcon(pin, containerId, index) {
+  const btn = document.createElement("button");
+  btn.className = "gp-icon" + (pin.active ? " active-tab" : "");
+  btn.draggable = true;
+  btn.appendChild(faviconEl(pin.url, pin.favIconUrl || ""));
+
+  btn.addEventListener("click", () =>
+    send({ type: "openGlobalPin", windowId, pinId: pin.id })
+  );
+  btn.addEventListener("contextmenu", (e) => showGpContextMenu(e, pin, null));
+  btn.addEventListener("mouseenter", () =>
+    showTooltip(btn, pin.customTitle || pin.liveTitle || pin.title, pin.url)
+  );
+  btn.addEventListener("mouseleave", hideTooltip);
+  btn.addEventListener("dragstart", () => {
+    dragItemId = pin.id;
+    dragItemSpaceId = null;
+    hideTooltip();
+  });
+  bindDropTarget(btn, () => ({ targetFolderId: containerId, targetIndex: index }), null);
+  return btn;
+}
+
+function globalFolderIcon(folder, containerId, index) {
+  const btn = document.createElement("button");
+  btn.className = "gp-icon";
+  btn.title = `${folder.title} (${countPins(folder.children)}件)`;
+  btn.draggable = true;
+
+  const icon = document.createElement("span");
+  icon.textContent = folder.collapsed ? "📁" : "📂";
+  icon.style.pointerEvents = "none";
+  btn.appendChild(icon);
+
+  btn.addEventListener("click", () =>
+    send({ type: "toggleFolder", spaceId: null, folderId: folder.id })
+  );
+  btn.addEventListener("contextmenu", (e) => showGpContextMenu(e, folder, null));
+  btn.addEventListener("dblclick", () => openFolderDialog("rename", folder, null));
+  btn.addEventListener("dragstart", (e) => {
+    dragItemId = folder.id;
+    dragItemSpaceId = null;
+    e.stopPropagation();
+  });
+  bindDropTarget(btn, () => ({ targetFolderId: folder.id, targetIndex: undefined }), null, "drag-into");
+  return btn;
+}
+
 function renderPins() {
   els.pinList.replaceChildren();
   if (!state.pins.length) {
@@ -139,7 +259,7 @@ function renderPins() {
     hint.textContent = "Pin はまだありません。「＋ 現在のタブ」で追加、またはタブをここへドロップ。";
     // Pin が 0 件のときはヒント全体をドロップ受け皿にする
     hint.addEventListener("dragover", (e) => {
-      if (!dragTabId) return;
+      if (!dragTabId && !dragItemId) return;
       e.preventDefault();
       hint.classList.add("drag-over");
     });
@@ -147,25 +267,41 @@ function renderPins() {
     hint.addEventListener("drop", (e) => {
       e.preventDefault();
       hint.classList.remove("drag-over");
-      if (!dragTabId) return;
-      send({ type: "pinTabAt", spaceId: state.activeSpaceId, tabId: dragTabId, targetFolderId: null, targetIndex: undefined });
-      dragTabId = null;
+      if (dragTabId) {
+        send({ type: "pinTabAt", spaceId: state.activeSpaceId, tabId: dragTabId, targetFolderId: null, targetIndex: undefined });
+        dragTabId = null;
+      } else if (dragItemId) {
+        if (dragItemSpaceId !== state.activeSpaceId) {
+          send({ type: "transferPin", fromSpaceId: dragItemSpaceId, toSpaceId: state.activeSpaceId, itemId: dragItemId, targetFolderId: null, targetIndex: undefined });
+        }
+        dragItemId = null;
+        dragItemSpaceId = null;
+      }
     });
     els.pinList.appendChild(hint);
     return;
   }
-  renderPinLevel(state.pins, null, 0);
+  renderPinLevel(state.pins, null, 0, els.pinList, state.activeSpaceId);
+  els.pinList.appendChild(pinListBottomZone(state.activeSpaceId));
 }
 
-// 木を再帰描画する。行自体は #pin-list 直下のフラットな兄弟で、
+// リスト末尾の透明ドロップゾーン(最後のアイテムより下へのドロップを受け付ける)
+function pinListBottomZone(spaceId) {
+  const zone = document.createElement("div");
+  zone.className = "pin-drop-bottom";
+  bindDropTarget(zone, () => ({ targetFolderId: null, targetIndex: undefined }), spaceId);
+  return zone;
+}
+
+// 木を再帰描画する。行自体は listEl 直下のフラットな兄弟で、
 // 深さはインデント(padding)でのみ表現する
-function renderPinLevel(items, containerId, depth) {
+function renderPinLevel(items, containerId, depth, listEl, spaceId) {
   items.forEach((item, index) => {
     if (Array.isArray(item.children)) {
-      els.pinList.appendChild(folderRow(item, containerId, index, depth));
-      if (!item.collapsed) renderPinLevel(item.children, item.id, depth + 1);
+      listEl.appendChild(folderRow(item, containerId, index, depth, listEl, spaceId));
+      if (!item.collapsed) renderPinLevel(item.children, item.id, depth + 1, listEl, spaceId);
     } else {
-      els.pinList.appendChild(pinRow(item, containerId, index, depth));
+      listEl.appendChild(pinRow(item, containerId, index, depth, spaceId));
     }
   });
 }
@@ -182,7 +318,7 @@ function indent(row, depth) {
   if (depth > 0) row.style.paddingLeft = 8 + depth * 16 + "px";
 }
 
-function pinRow(pin, containerId, index, depth) {
+function pinRow(pin, containerId, index, depth, spaceId) {
   const row = document.createElement("div");
   // 束縛タブを持つ Pin は「生きているタブ」として表示(Arc の Pinned Tab)
   // customTitle 設定済みの Pin は .custom クラスで ✎ ボタンを常時薄く表示
@@ -204,7 +340,7 @@ function pinRow(pin, containerId, index, depth) {
   row.appendChild(
     rowButton("✎", pin.customTitle ? "Pin 名を編集(空で保存するとリセット)" : "Pin 名を編集", (e) => {
       e.stopPropagation();
-      startPinRename(pin, label, row);
+      startPinRename(pin, label, row, spaceId);
     }, "rename")
   );
 
@@ -219,12 +355,23 @@ function pinRow(pin, containerId, index, depth) {
   row.appendChild(
     rowButton("×", "Pin を外す", (e) => {
       e.stopPropagation();
-      send({ type: "removeItem", spaceId: state.activeSpaceId, itemId: pin.id });
+      send({ type: "removeItem", spaceId, itemId: pin.id });
     })
   );
 
   row.addEventListener("click", () => {
-    send({ type: "openPin", windowId, spaceId: state.activeSpaceId, pinId: pin.id });
+    if (spaceId === null) {
+      send({ type: "openGlobalPin", windowId, pinId: pin.id });
+    } else {
+      send({ type: "openPin", windowId, spaceId, pinId: pin.id });
+    }
+  });
+  row.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    hideGpContextMenu();
+    hideTooltip();
+    showSpacePinContextMenu(e, pin, spaceId);
   });
 
   // ホバープレビュー(FR-3 簡易版: タイトル + URL)
@@ -236,15 +383,16 @@ function pinRow(pin, containerId, index, depth) {
   // DnD: この行の位置(同じ階層のこの位置)へ移動
   row.addEventListener("dragstart", () => {
     dragItemId = pin.id;
+    dragItemSpaceId = spaceId;
     hideTooltip();
   });
-  bindDropTarget(row, () => ({ targetFolderId: containerId, targetIndex: index }));
+  bindDropTarget(row, () => ({ targetFolderId: containerId, targetIndex: index }), spaceId);
   return row;
 }
 
 // Pin 名のインライン編集。Enter/blur で確定、Escape でキャンセル。
 // 空で確定すると customTitle を解除してライブタイトルに戻る。
-function startPinRename(pin, label, row) {
+function startPinRename(pin, label, row, spaceId) {
   const input = document.createElement("input");
   input.type = "text";
   input.className = "pin-rename-input";
@@ -263,7 +411,7 @@ function startPinRename(pin, label, row) {
     if (save) {
       send({
         type: "renamePin",
-        spaceId: state.activeSpaceId,
+        spaceId,
         pinId: pin.id,
         customTitle: input.value.trim(),
       });
@@ -280,7 +428,7 @@ function startPinRename(pin, label, row) {
   input.select();
 }
 
-function folderRow(folder, containerId, index, depth) {
+function folderRow(folder, containerId, index, depth, listEl, spaceId) {
   const row = document.createElement("div");
   row.className = "row folder-row" + (folder.collapsed ? "" : " folder-open");
   row.draggable = true;
@@ -310,25 +458,26 @@ function folderRow(folder, containerId, index, depth) {
       setTimeout(() => removeBtn.classList.remove("confirming"), 2000);
       return;
     }
-    send({ type: "removeItem", spaceId: state.activeSpaceId, itemId: folder.id });
+    send({ type: "removeItem", spaceId, itemId: folder.id });
   });
   row.appendChild(removeBtn);
 
   row.addEventListener("click", () => {
-    send({ type: "toggleFolder", spaceId: state.activeSpaceId, folderId: folder.id });
+    send({ type: "toggleFolder", spaceId, folderId: folder.id });
   });
-  row.addEventListener("dblclick", () => openFolderDialog("rename", folder));
+  row.addEventListener("dblclick", () => openFolderDialog("rename", folder, spaceId));
 
   // DnD: フォルダ行へのドロップは「フォルダの中へ入れる」
   row.addEventListener("dragstart", (e) => {
     dragItemId = folder.id;
+    dragItemSpaceId = spaceId;
     e.stopPropagation();
   });
-  bindDropTarget(row, () => ({ targetFolderId: folder.id, targetIndex: undefined }), "drag-into");
+  bindDropTarget(row, () => ({ targetFolderId: folder.id, targetIndex: undefined }), spaceId, "drag-into");
   return row;
 }
 
-function bindDropTarget(row, getTarget, hoverClass = "drag-over") {
+function bindDropTarget(row, getTarget, spaceId, hoverClass = "drag-over") {
   row.addEventListener("dragover", (e) => {
     if (!dragItemId && !dragTabId) return;
     e.preventDefault();
@@ -340,20 +489,33 @@ function bindDropTarget(row, getTarget, hoverClass = "drag-over") {
     row.classList.remove(hoverClass);
     if (dragItemId) {
       const { targetFolderId, targetIndex } = getTarget();
-      if (dragItemId !== targetFolderId) {
+      if (dragItemId === targetFolderId) {
+        // 自分自身へのドロップは無視
+      } else if (dragItemSpaceId !== spaceId) {
+        // 異なるスペース間の移動
+        send({
+          type: "transferPin",
+          fromSpaceId: dragItemSpaceId,
+          toSpaceId: spaceId,
+          itemId: dragItemId,
+          targetFolderId,
+          targetIndex,
+        });
+      } else {
         send({
           type: "moveItem",
-          spaceId: state.activeSpaceId,
+          spaceId,
           itemId: dragItemId,
           targetFolderId,
           targetIndex,
         });
       }
       dragItemId = null;
+      dragItemSpaceId = null;
     } else if (dragTabId) {
       // タブを Pin に変換して指定位置へ挿入
       const { targetFolderId, targetIndex } = getTarget();
-      send({ type: "pinTabAt", spaceId: state.activeSpaceId, tabId: dragTabId, targetFolderId, targetIndex });
+      send({ type: "pinTabAt", spaceId, tabId: dragTabId, targetFolderId, targetIndex });
       dragTabId = null;
     }
   });
@@ -515,6 +677,98 @@ function hideTooltip() {
 }
 
 // ---------------------------------------------------------------------------
+// Global Pin コンテキストメニュー
+// ---------------------------------------------------------------------------
+function showGpContextMenu(e, item, spaceId) {
+  e.preventDefault();
+  e.stopPropagation();
+  hideGpContextMenu();
+  hideTooltip();
+
+  const menu = document.createElement("div");
+  menu.className = "context-menu";
+  const isFolder = Array.isArray(item.children);
+
+  const renameBtn = document.createElement("button");
+  renameBtn.className = "context-menu-item";
+  renameBtn.textContent = isFolder ? "フォルダ名を変更" : "Pin を編集(名前・URL)";
+  renameBtn.addEventListener("click", () => {
+    hideGpContextMenu();
+    if (isFolder) {
+      openFolderDialog("rename", item, spaceId);
+    } else {
+      openPinEditDialog(item, spaceId);
+    }
+  });
+  menu.appendChild(renameBtn);
+
+  const deleteBtn = document.createElement("button");
+  deleteBtn.className = "context-menu-item danger";
+  deleteBtn.textContent = isFolder ? "フォルダを削除(中身ごと)" : "削除";
+  deleteBtn.addEventListener("click", () => {
+    hideGpContextMenu();
+    send({ type: "removeItem", spaceId, itemId: item.id });
+  });
+  menu.appendChild(deleteBtn);
+
+  document.body.appendChild(menu);
+  gpContextMenuEl = menu;
+
+  // 画面端に収まるよう位置調整
+  const x = Math.min(e.clientX, window.innerWidth - menu.offsetWidth - 8);
+  const y = Math.min(e.clientY, window.innerHeight - menu.offsetHeight - 8);
+  menu.style.left = x + "px";
+  menu.style.top = y + "px";
+
+  setTimeout(() => {
+    document.addEventListener("click", hideGpContextMenu, { once: true });
+    document.addEventListener("contextmenu", hideGpContextMenu, { once: true });
+    document.addEventListener("keydown", (ev) => {
+      if (ev.key === "Escape") hideGpContextMenu();
+    }, { once: true });
+  }, 0);
+}
+
+function hideGpContextMenu() {
+  gpContextMenuEl?.remove();
+  gpContextMenuEl = null;
+}
+
+function showSpacePinContextMenu(e, pin, spaceId) {
+  const menu = document.createElement("div");
+  menu.className = "context-menu";
+
+  const editBtn = document.createElement("button");
+  editBtn.className = "context-menu-item";
+  editBtn.textContent = "Pin を編集(名前・URL)";
+  editBtn.addEventListener("click", () => { hideGpContextMenu(); openPinEditDialog(pin, spaceId); });
+  menu.appendChild(editBtn);
+
+  const deleteBtn = document.createElement("button");
+  deleteBtn.className = "context-menu-item danger";
+  deleteBtn.textContent = "削除";
+  deleteBtn.addEventListener("click", () => {
+    hideGpContextMenu();
+    send({ type: "removeItem", spaceId, itemId: pin.id });
+  });
+  menu.appendChild(deleteBtn);
+
+  document.body.appendChild(menu);
+  gpContextMenuEl = menu;
+
+  const x = Math.min(e.clientX, window.innerWidth - menu.offsetWidth - 8);
+  const y = Math.min(e.clientY, window.innerHeight - menu.offsetHeight - 8);
+  menu.style.left = x + "px";
+  menu.style.top = y + "px";
+
+  setTimeout(() => {
+    document.addEventListener("click", hideGpContextMenu, { once: true });
+    document.addEventListener("contextmenu", hideGpContextMenu, { once: true });
+    document.addEventListener("keydown", (ev) => { if (ev.key === "Escape") hideGpContextMenu(); }, { once: true });
+  }, 0);
+}
+
+// ---------------------------------------------------------------------------
 // Space 作成・編集ダイアログ
 // ---------------------------------------------------------------------------
 function buildSwatches() {
@@ -559,6 +813,12 @@ function openDialog(mode) {
 }
 
 function bindStaticHandlers() {
+  els.globalPinCurrent.addEventListener("click", () =>
+    send({ type: "addGlobalPinFromTab", windowId })
+  );
+  els.globalNewFolder.addEventListener("click", () =>
+    openFolderDialog("create", null, null)
+  );
   els.pinCurrent.addEventListener("click", () =>
     send({ type: "addPinFromTab", windowId })
   );
@@ -593,18 +853,20 @@ function bindStaticHandlers() {
     els.dialog.close();
   });
 
-  els.newFolder.addEventListener("click", () => openFolderDialog("create"));
+  els.newFolder.addEventListener("click", () => openFolderDialog("create", null, state.activeSpaceId));
   els.folderCancel.addEventListener("click", () => els.folderDialog.close());
   els.folderForm.addEventListener("submit", (e) => {
     e.preventDefault();
     const title = els.folderNameInput.value.trim();
     if (!title || !folderDialogState) return;
     if (folderDialogState.mode === "create") {
-      send({ type: "createFolder", spaceId: state.activeSpaceId, title });
+      send({ type: "createFolder", spaceId: folderDialogState.spaceId, title });
+    } else if (folderDialogState.mode === "renamePin") {
+      send({ type: "renamePin", spaceId: folderDialogState.spaceId, pinId: folderDialogState.pinId, customTitle: title });
     } else {
       send({
         type: "renameFolder",
-        spaceId: state.activeSpaceId,
+        spaceId: folderDialogState.spaceId,
         folderId: folderDialogState.folderId,
         title,
       });
@@ -612,15 +874,40 @@ function bindStaticHandlers() {
     els.folderDialog.close();
   });
 
+  els.pinEditCancel.addEventListener("click", () => els.pinEditDialog.close());
+  els.pinEditForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (!pinEditState) return;
+    send({
+      type: "updatePin",
+      spaceId: pinEditState.spaceId,
+      pinId: pinEditState.pin.id,
+      customTitle: els.pinEditNameInput.value.trim(),
+      url: els.pinEditUrlInput.value.trim(),
+    });
+    els.pinEditDialog.close();
+  });
+
   bindImportHandlers();
 }
 
-function openFolderDialog(mode, folder) {
-  folderDialogState = mode === "rename" ? { mode, folderId: folder.id } : { mode };
+function openFolderDialog(mode, folder, spaceId) {
+  folderDialogState = mode === "rename"
+    ? { mode, folderId: folder.id, spaceId }
+    : { mode, spaceId };
   els.folderDialogTitle.textContent = mode === "rename" ? "フォルダ名を変更" : "新しいフォルダ";
   els.folderNameInput.value = mode === "rename" ? folder.title : "";
   els.folderDialog.showModal();
   els.folderNameInput.focus();
+}
+
+function openPinEditDialog(pin, spaceId) {
+  pinEditState = { pin, spaceId };
+  els.pinEditNameInput.value = pin.customTitle || "";
+  els.pinEditUrlInput.value = pin.url || "";
+  els.pinEditDialog.showModal();
+  els.pinEditUrlInput.focus();
+  els.pinEditUrlInput.select();
 }
 
 // ---------------------------------------------------------------------------

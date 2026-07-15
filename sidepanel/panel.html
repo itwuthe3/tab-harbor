@@ -18,9 +18,20 @@
       <nav id="space-chips" aria-label="Spaces"></nav>
     </header>
 
+    <section id="global-pins-section">
+      <div class="section-head">
+        <span class="section-label">Global Pin</span>
+        <span>
+          <button id="global-new-folder" class="text-btn" title="Global フォルダを作成">＋ フォルダ</button>
+          <button id="global-pin-current" class="text-btn" title="現在のタブを Global Pin に追加">＋ 現在のタブ</button>
+        </span>
+      </div>
+      <div id="global-pin-list"></div>
+    </section>
+
     <section id="pins-section">
       <div class="section-head">
-        <span class="section-label">Pin</span>
+        <span class="section-label">Space Pin</span>
         <span>
           <button id="new-folder" class="text-btn" title="フォルダを作成">＋ フォルダ</button>
           <button id="pin-current" class="text-btn" title="現在のタブを Pin に追加">＋ 現在のタブ</button>
@@ -65,6 +76,21 @@
         <div class="dialog-actions">
           <span class="spacer"></span>
           <button type="button" id="folder-cancel">キャンセル</button>
+          <button type="submit" class="primary">保存</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="pin-edit-dialog">
+      <form method="dialog" id="pin-edit-form">
+        <h2>Pin を編集</h2>
+        <label for="pin-edit-name-input">名前（空で元のタイトルに戻す）</label>
+        <input id="pin-edit-name-input" type="text" maxlength="200" autocomplete="off" placeholder="タイトルを自動取得" />
+        <label for="pin-edit-url-input">URL</label>
+        <input id="pin-edit-url-input" type="url" required autocomplete="off" />
+        <div class="dialog-actions">
+          <span class="spacer"></span>
+          <button type="button" id="pin-edit-cancel">キャンセル</button>
           <button type="submit" class="primary">保存</button>
         </div>
       </form>

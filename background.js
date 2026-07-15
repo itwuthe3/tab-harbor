@@ -3,6 +3,11 @@
 // 「グループのタイトル = Space 名」を永続的な対応付けの根拠にする。
 
 const NO_GROUP = -1; // chrome.tabGroups.TAB_GROUP_ID_NONE
+
+// Global Pin タブは Space グループに収容しない。
+// openGlobalPin が作成した直後のタブ ID をここに保持し、adoptTab でスキップする。
+// SW が再起動した場合の fallback として URL 比較も併用する。
+const globalPinTabSet = new Set();
 const DEFAULT_SPACE = { name: "Home", color: "blue" };
 const GROUP_COLORS = ["blue", "red", "yellow", "green", "pink", "purple", "cyan", "orange", "grey"];
 const RESTORABLE_URL = /^(https?|file):/;
@@ -55,6 +60,45 @@ async function migrateFromSync() {
   const data = await chrome.storage.sync.get(keys);
   await chrome.storage.local.set(data);
   await chrome.storage.sync.remove(keys).catch(() => {});
+}
+
+// ---------------------------------------------------------------------------
+// 全 Space 共通 Pin (storage.local: globalPins)
+// ---------------------------------------------------------------------------
+async function getGlobalPins() {
+  const { globalPins = [] } = await chrome.storage.local.get("globalPins");
+  return globalPins;
+}
+async function saveGlobalPins(pins) {
+  await chrome.storage.local.set({ globalPins: pins });
+}
+
+// Global Pin が開いているタブのIDを session storage に記憶・取得する。
+// ページがリダイレクトしてURLが変わってもタブを追跡できる。
+async function getGlobalPinTab(pinId) {
+  const key = "gpt:" + pinId;
+  const { [key]: tabId } = await chrome.storage.session.get(key).catch(() => ({}));
+  return tabId ?? null;
+}
+async function setGlobalPinTab(pinId, tabId) {
+  const key = "gpt:" + pinId;
+  if (tabId == null) {
+    await chrome.storage.session.remove(key).catch(() => {});
+  } else {
+    await chrome.storage.session.set({ [key]: tabId }).catch(() => {});
+  }
+}
+
+// Space Pin と共通 Pin を同じインタフェースで操作するコンテキストを返す。
+// spaceId が null のとき globalPins、それ以外は Space の pins を操作する。
+async function getPinsContext(spaceId) {
+  if (spaceId === null) {
+    const pins = await getGlobalPins();
+    return { pins, save: () => saveGlobalPins(pins) };
+  }
+  const space = await getSpace(spaceId);
+  if (!space) return null;
+  return { pins: space.pins, save: () => saveSpace(space) };
 }
 
 // ---------------------------------------------------------------------------
@@ -350,6 +394,18 @@ async function adoptTab(tabId) {
   if (tab.groupId !== NO_GROUP || tab.pinned) return;
   const win = await chrome.windows.get(tab.windowId).catch(() => null);
   if (!win || win.type !== "normal") return;
+
+  // Global Pin が開いたタブはどの Space にも収容しない
+  if (globalPinTabSet.has(tabId)) {
+    globalPinTabSet.delete(tabId);
+    return;
+  }
+  // SW 再起動後の fallback: URL が Global Pin と一致するタブも収容しない
+  const globalPins = await getGlobalPins();
+  for (const pin of iterPins(globalPins)) {
+    if (normUrl(tab.url || tab.pendingUrl || "") === normUrl(pin.url)) return;
+  }
+
   await groupIntoActiveSpace(tab.windowId, [tabId]);
 }
 
@@ -405,52 +461,111 @@ async function addPinFromTab(windowId) {
   const bindings = await getBindings();
   const sid = bindings[windowId]?.activeSpaceId;
   if (!sid) return;
-  const space = await getSpace(sid);
   const [tab] = await chrome.tabs.query({ windowId, active: true });
-  if (!space || !tab || !tab.url || !RESTORABLE_URL.test(tab.url)) return;
+  if (!tab || !tab.url || !RESTORABLE_URL.test(tab.url)) return;
   await addPin(sid, tab.title, tab.url);
 }
 
+// 共通 Pin にアクティブタブを追加する
+async function addGlobalPinFromTab(windowId) {
+  const [tab] = await chrome.tabs.query({ windowId, active: true });
+  if (!tab || !tab.url || !RESTORABLE_URL.test(tab.url)) return;
+  await addPin(null, tab.title, tab.url);
+}
+
+// 共通 Pin を開く。URL 一致タブがあればフォーカス、なければ新規タブ(グループ外)。
+async function openGlobalPin(windowId, pinId) {
+  const pins = await getGlobalPins();
+  const found = findItem(pins, pinId);
+  if (!found || isFolder(found.item) || !found.item.url) return;
+  const url = found.item.url;
+
+  // 1. 前回開いたタブ ID が session storage に残っていれば再利用
+  const storedId = await getGlobalPinTab(pinId);
+  if (storedId != null) {
+    const tab = await chrome.tabs.get(storedId).catch(() => null);
+    if (tab) {
+      if (tab.groupId !== NO_GROUP) {
+        await chrome.tabs.ungroup([tab.id]).catch(() => {});
+      }
+      await chrome.tabs.update(tab.id, { active: true }).catch(() => {});
+      broadcast();
+      return;
+    }
+    await setGlobalPinTab(pinId, null);
+  }
+
+  // 2. URL で既存タブを探す(全グループ対象)
+  const allTabs = await chrome.tabs.query({ windowId });
+  const existing = allTabs.find(
+    (t) => normUrl(t.url || t.pendingUrl || "") === normUrl(url)
+  );
+  if (existing) {
+    if (existing.groupId !== NO_GROUP) {
+      await chrome.tabs.ungroup([existing.id]).catch(() => {});
+    }
+    await chrome.tabs.update(existing.id, { active: true }).catch(() => {});
+    await setGlobalPinTab(pinId, existing.id);
+  } else {
+    // 3. 新規タブ作成。adoptTab がグループ収容しないよう Set に登録
+    const tab = await chrome.tabs.create({ windowId, url, active: true });
+    globalPinTabSet.add(tab.id);
+    await setGlobalPinTab(pinId, tab.id);
+  }
+  broadcast();
+}
+
 async function addPin(spaceId, title, url) {
-  const space = await getSpace(spaceId);
-  if (!space) return;
-  for (const pin of iterPins(space.pins)) {
+  const ctx = await getPinsContext(spaceId);
+  if (!ctx) return;
+  for (const pin of iterPins(ctx.pins)) {
     if (pin.url === url) return; // 重複 Pin は作らない(フォルダ内も含む)
   }
-  space.pins.push({
-    id: crypto.randomUUID(),
-    title: (title || url).slice(0, 200),
-    url,
-  });
-  await saveSpace(space);
+  ctx.pins.push({ id: crypto.randomUUID(), title: (title || url).slice(0, 200), url });
+  await ctx.save();
+  broadcast();
+}
+
+// Pin の名前(customTitle)と URL を更新する
+async function updatePin(spaceId, pinId, { customTitle, url }) {
+  const ctx = await getPinsContext(spaceId);
+  if (!ctx) return;
+  const found = findItem(ctx.pins, pinId);
+  if (!found || isFolder(found.item)) return;
+  const pin = found.item;
+  const trimTitle = (customTitle ?? "").trim();
+  pin.customTitle = trimTitle || undefined;
+  const trimUrl = (url ?? "").trim();
+  if (trimUrl) pin.url = trimUrl;
+  await ctx.save();
   broadcast();
 }
 
 // Pin / フォルダ共通の削除(フォルダは子ごと消える)
 async function removeItem(spaceId, itemId) {
-  const space = await getSpace(spaceId);
-  if (!space) return;
-  const found = findItem(space.pins, itemId);
+  const ctx = await getPinsContext(spaceId);
+  if (!ctx) return;
+  const found = findItem(ctx.pins, itemId);
   if (!found) return;
   found.parent.splice(found.index, 1);
-  await saveSpace(space);
+  await ctx.save();
   broadcast();
 }
 
 // item を targetFolderId(null = ルート)の targetIndex へ移動する
 async function moveItem(spaceId, itemId, targetFolderId, targetIndex) {
-  const space = await getSpace(spaceId);
-  if (!space) return;
-  const src = findItem(space.pins, itemId);
+  const ctx = await getPinsContext(spaceId);
+  if (!ctx) return;
+  const src = findItem(ctx.pins, itemId);
   if (!src) return;
 
-  let target = space.pins;
+  let target = ctx.pins;
   if (targetFolderId) {
     // フォルダを自分自身・子孫の中へは移動させない(循環防止)
     if (isFolder(src.item) && (src.item.id === targetFolderId || findItem(src.item.children, targetFolderId))) {
       return;
     }
-    const folder = findItem(space.pins, targetFolderId);
+    const folder = findItem(ctx.pins, targetFolderId);
     if (!folder || !isFolder(folder.item)) return;
     target = folder.item.children;
   }
@@ -459,73 +574,97 @@ async function moveItem(spaceId, itemId, targetFolderId, targetIndex) {
   let index = Number.isInteger(targetIndex) ? targetIndex : target.length;
   if (target === src.parent && src.index < index) index--;
   target.splice(Math.max(0, Math.min(index, target.length)), 0, moved);
-  await saveSpace(space);
+  await ctx.save();
+  broadcast();
+}
+
+// item を fromSpaceId から toSpaceId の targetFolderId/targetIndex へ移動する
+async function transferPin(fromSpaceId, toSpaceId, itemId, targetFolderId, targetIndex) {
+  const fromCtx = await getPinsContext(fromSpaceId);
+  const toCtx = await getPinsContext(toSpaceId);
+  if (!fromCtx || !toCtx) return;
+  const src = findItem(fromCtx.pins, itemId);
+  if (!src) return;
+  const [item] = src.parent.splice(src.index, 1);
+
+  let target = toCtx.pins;
+  if (targetFolderId) {
+    const folder = findItem(toCtx.pins, targetFolderId);
+    if (folder && isFolder(folder.item)) target = folder.item.children;
+  }
+  const idx = Number.isInteger(targetIndex) ? targetIndex : target.length;
+  target.splice(Math.max(0, Math.min(idx, target.length)), 0, item);
+
+  await fromCtx.save();
+  await toCtx.save();
   broadcast();
 }
 
 async function createFolder(spaceId, title) {
-  const space = await getSpace(spaceId);
-  if (!space) return;
-  space.pins.push({
+  const ctx = await getPinsContext(spaceId);
+  if (!ctx) return;
+  ctx.pins.push({
     id: crypto.randomUUID(),
     title: String(title || "フォルダ").trim().slice(0, 80) || "フォルダ",
     children: [],
     collapsed: true,
   });
-  await saveSpace(space);
+  await ctx.save();
   broadcast();
 }
 
 async function renameFolder(spaceId, folderId, title) {
-  const space = await getSpace(spaceId);
-  if (!space) return;
-  const found = findItem(space.pins, folderId);
+  const ctx = await getPinsContext(spaceId);
+  if (!ctx) return;
+  const found = findItem(ctx.pins, folderId);
   if (!found || !isFolder(found.item)) return;
   found.item.title = String(title || "").trim().slice(0, 80) || found.item.title;
-  await saveSpace(space);
+  await ctx.save();
   broadcast();
 }
 
 async function toggleFolder(spaceId, folderId) {
-  const space = await getSpace(spaceId);
-  if (!space) return;
-  const found = findItem(space.pins, folderId);
+  const ctx = await getPinsContext(spaceId);
+  if (!ctx) return;
+  const found = findItem(ctx.pins, folderId);
   if (!found || !isFolder(found.item)) return;
   found.item.collapsed = !found.item.collapsed;
-  await saveSpace(space);
+  await ctx.save();
   broadcast();
 }
 
 // タブをドラッグして Pin エリアにドロップしたとき、指定位置に Pin を挿入する。
 async function pinTabAt(spaceId, tabId, targetFolderId, targetIndex) {
-  const space = await getSpace(spaceId);
-  const tab = await chrome.tabs.get(tabId).catch(() => null);
-  if (!space || !tab || !tab.url || !RESTORABLE_URL.test(tab.url)) return;
-  for (const pin of iterPins(space.pins)) {
+  const [ctx, tab] = await Promise.all([
+    getPinsContext(spaceId),
+    chrome.tabs.get(tabId).catch(() => null),
+  ]);
+  if (!ctx || !tab || !tab.url || !RESTORABLE_URL.test(tab.url)) return;
+  for (const pin of iterPins(ctx.pins)) {
     if (pin.url === tab.url) return; // 重複はスキップ
   }
   const pin = { id: crypto.randomUUID(), title: (tab.title || tab.url).slice(0, 200), url: tab.url };
   if (targetFolderId) {
-    const folder = findItem(space.pins, targetFolderId);
+    const folder = findItem(ctx.pins, targetFolderId);
     if (folder && isFolder(folder.item)) {
       const idx = Number.isInteger(targetIndex) ? targetIndex : folder.item.children.length;
       folder.item.children.splice(Math.max(0, Math.min(idx, folder.item.children.length)), 0, pin);
     } else {
-      space.pins.push(pin);
+      ctx.pins.push(pin);
     }
   } else {
-    const idx = Number.isInteger(targetIndex) ? targetIndex : space.pins.length;
-    space.pins.splice(Math.max(0, Math.min(idx, space.pins.length)), 0, pin);
+    const idx = Number.isInteger(targetIndex) ? targetIndex : ctx.pins.length;
+    ctx.pins.splice(Math.max(0, Math.min(idx, ctx.pins.length)), 0, pin);
   }
-  await saveSpace(space);
+  await ctx.save();
   broadcast();
 }
 
 // customTitle を設定する。空文字で渡すと解除してライブタイトルに戻す。
 async function renamePin(spaceId, pinId, customTitle) {
-  const space = await getSpace(spaceId);
-  if (!space) return;
-  const found = findItem(space.pins, pinId);
+  const ctx = await getPinsContext(spaceId);
+  if (!ctx) return;
+  const found = findItem(ctx.pins, pinId);
   if (!found || isFolder(found.item)) return;
   const title = String(customTitle || "").trim().slice(0, 200);
   if (title) {
@@ -533,7 +672,7 @@ async function renamePin(spaceId, pinId, customTitle) {
   } else {
     delete found.item.customTitle;
   }
-  await saveSpace(space);
+  await ctx.save();
   broadcast();
 }
 
@@ -728,6 +867,25 @@ async function getState(windowId) {
     ? await chrome.storage.local.get(pendingKey)
     : {};
 
+  // 共通 Pin: ウィンドウ内の全タブ(全グループ含む)を対象にタブを解決する。
+  // スペースをまたいでも同じタブを追跡できるよう、全グループ対象で検索する。
+  const allWindowTabs = await chrome.tabs.query({ windowId }).catch(() => []);
+  const rawGlobalPins = await getGlobalPins();
+  const globalPinTabIds = new Set(); // 開いている Global Pin タブ(「タブ」一覧から除外)
+  const globalPinView = mapPinTree(rawGlobalPins, (pin) => {
+    const tab = allWindowTabs.find(
+      (t) => normUrl(t.url || t.pendingUrl || "") === normUrl(pin.url)
+    );
+    if (tab) globalPinTabIds.add(tab.id);
+    return {
+      ...pin,
+      tabId: tab?.id ?? null,
+      liveTitle: tab?.title ?? null,
+      favIconUrl: tab?.favIconUrl ?? "",
+      active: !!tab?.active,
+    };
+  });
+
   return {
     windowId,
     activeSpaceId: active?.id ?? null,
@@ -748,9 +906,10 @@ async function getState(windowId) {
         active: !!tab?.active,
       };
     }),
-    // 束縛済みタブは「タブ」一覧に出さない(Pin 行がそのタブを表す)
-    tabs: allTabs.filter((t) => !boundTabIds.has(t.id)).map(toView),
+    // 束縛済みタブ・Global Pin タブは「タブ」一覧に出さない
+    tabs: allTabs.filter((t) => !boundTabIds.has(t.id) && !globalPinTabIds.has(t.id)).map(toView),
     pendingRestoreCount: pending.length,
+    globalPins: globalPinView,
   };
 }
 
@@ -943,6 +1102,10 @@ async function dispatch(msg) {
       return enqueue(() =>
         moveItem(msg.spaceId, msg.itemId, msg.targetFolderId ?? null, msg.targetIndex)
       );
+    case "transferPin":
+      return enqueue(() =>
+        transferPin(msg.fromSpaceId, msg.toSpaceId, msg.itemId, msg.targetFolderId ?? null, msg.targetIndex)
+      );
     case "createFolder":
       return enqueue(() => createFolder(msg.spaceId, msg.title));
     case "renameFolder":
@@ -962,8 +1125,14 @@ async function dispatch(msg) {
       return chrome.tabs.move(msg.tabId, { index: msg.targetIndex });
     case "renamePin":
       return enqueue(() => renamePin(msg.spaceId, msg.pinId, msg.customTitle));
+    case "updatePin":
+      return enqueue(() => updatePin(msg.spaceId, msg.pinId, { customTitle: msg.customTitle, url: msg.url }));
     case "openPin":
       return enqueue(() => openPin(msg.windowId, msg.spaceId, msg.pinId));
+    case "openGlobalPin":
+      return enqueue(() => openGlobalPin(msg.windowId, msg.pinId));
+    case "addGlobalPinFromTab":
+      return enqueue(() => addGlobalPinFromTab(msg.windowId));
     case "importArc":
       return enqueue(() => importSpaces(msg.spaces));
     case "activateTab":
