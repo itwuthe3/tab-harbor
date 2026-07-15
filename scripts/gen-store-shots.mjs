@@ -79,7 +79,7 @@ await sw.evaluate(async () => {
       { id: mk(), title: "社内ポータル", url: "https://portal.example.com/" },
       { id: mk(), title: "メール", url: "https://mail.example.com/" },
       { id: mk(), title: "カレンダー", url: "https://calendar.example.com/" },
-      { id: mk(), title: "プロジェクト", children: [
+      { id: mk(), title: "プロジェクト", collapsed: false, children: [
         { id: mk(), title: "課題トラッカー", url: "https://issues.example.com/" },
         { id: mk(), title: "Wiki", url: "https://wiki.example.com/" },
         { id: mk(), title: "CI ダッシュボード", url: "https://ci.example.com/" },
@@ -94,10 +94,18 @@ await sw.evaluate(async () => {
       { id: mk(), title: "レシピ", url: "https://recipes.example.com/" },
     ],
   };
-  await chrome.storage.sync.set({
+  // 全 Space 共通の Global Pin(アイコングリッド)
+  const globalPins = [
+    { id: mk(), title: "検索", url: "https://search.example.com/" },
+    { id: mk(), title: "チャット", url: "https://chat.example.com/" },
+    { id: mk(), title: "カレンダー", url: "https://cal.example.com/" },
+    { id: mk(), title: "AI アシスタント", url: "https://ai.example.com/" },
+  ];
+  await chrome.storage.local.set({
     spacesOrder: [work.id, personal.id],
     ["space:" + work.id]: work,
     ["space:" + personal.id]: personal,
+    globalPins,
   });
 });
 
@@ -138,8 +146,8 @@ await panel.click("#import-cancel");
 
 // ---- 1280x800 に合成 --------------------------------------------------------
 const captions = [
-  { img: shot1, title: "Pin と Space でタブを整理", sub: "よく使うサイトはフォルダ階層つきの Pin に。一時タブは下のエリアに分離。" },
-  { img: shot2, title: "Space でコンテキストを切り替え", sub: "仕事・個人などの作業スペースをワンクリックで切替。テーマ色つき。" },
+  { img: shot1, title: "Pin と Space でタブを整理", sub: "全 Space 共通の Global Pin、フォルダ階層つきの Space Pin。一時タブは下のエリアに分離。" },
+  { img: shot2, title: "Space でコンテキストを切り替え", sub: "仕事・個人などの作業スペースをワンクリックで切替。テーマ色つき、復元はメモリに優しい遅延方式。" },
   { img: shot3, title: "Arc からワンクリックでインポート", sub: "Arc の Space・Pin・フォルダ構造をそのまま持ち込めます。" },
 ];
 

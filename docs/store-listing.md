@@ -41,13 +41,18 @@ English:
 > サイドバー上部に固定したサイトは、クリックすると開いているタブにフォーカスし、
 > なければ開きます。開いたタブは Pin と一体化して一時タブの一覧を汚さず、
 > ページ内で移動しても Pin が追跡。「－」ボタンでタブだけ閉じて Pin を残せます。
-> フォルダによる階層整理(ドラッグ&ドロップ・折りたたみ・ネスト)にも対応。
+> フォルダによる階層整理(ドラッグ&ドロップ・折りたたみ・ネスト)、
+> 名前や URL の編集(カスタム名の固定)にも対応。
+>
+> ■ Global Pin — どの Space からも 1 クリック
+> 毎日使うサイトは全 Space 共通のアイコングリッドへ(Arc の Favorites 相当)。
+> タブや Pin をドラッグするだけで登録できます。
 >
 > ■ Space — 作業スペースをまるごと切り替え
 > 「仕事」「調べ物」「個人」など、Pin とタブのセットを Space として保持します。
 > 切り替えると対象のタブグループが展開され、ほかは折りたたまれます。テーマ色つき。
 > 新しいタブは現在の Space に自動で振り分けられ、ブラウザを再起動しても
-> タブ構成を復元します。
+> タブ構成を復元。復元は必要な分だけ開く遅延方式なのでメモリに優しい。
 >
 > ■ Arc からのインポート
 > Arc の StorableSidebar.json を選ぶだけで、Space・Pin(フォルダ階層ごと)・
@@ -81,13 +86,18 @@ English:
 > (or opens it), and that tab merges into the pin instead of cluttering your
 > tab list. The pin follows in-page navigation, and "–" closes the tab while
 > keeping the pin. Organize pins into nested, collapsible folders with
-> drag & drop.
+> drag & drop, and rename pins or edit their URLs.
+>
+> ■ Global Pins — one click from any Space
+> Keep your daily sites in a compact icon grid shared across all Spaces
+> (like Arc's Favorites). Just drag a tab or pin onto it.
 >
 > ■ Spaces — switch whole working contexts
 > Keep separate sets of pins and tabs for work, research, personal life.
 > Switching a Space expands its tab group and collapses the rest, with theme
 > colors per Space. New tabs join the active Space automatically, and your
-> layout survives browser restarts.
+> layout survives browser restarts — tabs are restored lazily to keep
+> memory usage low.
 >
 > ■ Import from Arc
 > Pick your Arc StorableSidebar.json and bring over Spaces, pinned tabs

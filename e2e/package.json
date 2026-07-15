@@ -1,0 +1,12 @@
+{
+  "name": "tab-harbor-e2e",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "setup": "npm i && npx playwright install chromium --no-shell",
+    "test": "bash run-all.sh"
+  },
+  "devDependencies": {
+    "playwright": "^1.50.0"
+  }
+}
