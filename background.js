@@ -952,7 +952,10 @@ async function dispatch(msg) {
     case "restoreSavedTabs":
       return enqueue(() => restoreSavedTabs(msg.windowId, msg.spaceId));
     case "discardSavedTabs":
-      return chrome.storage.local.remove("pendingRestore:" + msg.spaceId);
+      return enqueue(async () => {
+        await chrome.storage.local.remove("pendingRestore:" + msg.spaceId);
+        broadcast();
+      });
     case "pinTabAt":
       return enqueue(() => pinTabAt(msg.spaceId, msg.tabId, msg.targetFolderId ?? null, msg.targetIndex));
     case "moveTab":
