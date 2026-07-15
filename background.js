@@ -252,8 +252,15 @@ async function liveGroupId(binding, spaceId) {
 async function materializeSpace(windowId, space) {
   const savedKey   = "savedTabs:"     + space.id;
   const pendingKey = "pendingRestore:" + space.id;
+  const closedKey  = "userClosed:"    + space.id;
+
+  // ユーザーが意図的に全タブを閉じた場合は savedTabs を復元しない(新規タブを開く)
+  // session storage のフラグはブラウザ再起動時に消えるため、クラッシュ復元には影響しない
+  const { [closedKey]: userClosed } = await chrome.storage.session.get(closedKey).catch(() => ({}));
+  await chrome.storage.session.remove(closedKey).catch(() => {});
+
   const { [savedKey]: saved = [] } = await chrome.storage.local.get(savedKey);
-  const urls = saved.filter((u) => RESTORABLE_URL.test(u));
+  const urls = userClosed ? [] : saved.filter((u) => RESTORABLE_URL.test(u));
 
   // 2 枚目以降を pendingRestore に退避(前回の pendingRestore は上書きリセット)
   if (urls.length > 1) {
@@ -870,14 +877,23 @@ async function getState(windowId) {
     : {};
 
   // 共通 Pin: ウィンドウ内の全タブ(全グループ含む)を対象にタブを解決する。
-  // スペースをまたいでも同じタブを追跡できるよう、全グループ対象で検索する。
+  // リダイレクト等で URL が変わってもタブIDで追跡できるよう session storage を優先する。
   const allWindowTabs = await chrome.tabs.query({ windowId }).catch(() => []);
   const rawGlobalPins = await getGlobalPins();
+  // Pin ごとに session storage のタブID を事前取得(mapPinTree は同期のため)
+  const globalPinStoredIds = new Map();
+  for (const pin of iterPins(rawGlobalPins)) {
+    const storedId = await getGlobalPinTab(pin.id);
+    if (storedId != null) globalPinStoredIds.set(pin.id, storedId);
+  }
   const globalPinTabIds = new Set(); // 開いている Global Pin タブ(「タブ」一覧から除外)
   const globalPinView = mapPinTree(rawGlobalPins, (pin) => {
-    const tab = allWindowTabs.find(
-      (t) => normUrl(t.url || t.pendingUrl || "") === normUrl(pin.url)
-    );
+    const storedId = globalPinStoredIds.get(pin.id);
+    // タブID 一致を優先、次いで URL 一致
+    const tab = (storedId ? allWindowTabs.find((t) => t.id === storedId) : null)
+      ?? allWindowTabs.find(
+        (t) => normUrl(t.url || t.pendingUrl || "") === normUrl(pin.url)
+      );
     if (tab) globalPinTabIds.add(tab.id);
     return {
       ...pin,
@@ -1016,7 +1032,12 @@ chrome.tabGroups.onRemoved.addListener((group) => {
     const bindings = await getBindings();
     for (const b of Object.values(bindings)) {
       for (const [sid, gid] of Object.entries(b.groups)) {
-        if (gid === group.id) delete b.groups[sid];
+        if (gid === group.id) {
+          delete b.groups[sid];
+          // ユーザーが明示的にタブを全て閉じた印を session storage に残す。
+          // ブラウザ再起動時は session storage がクリアされるため起動時の復元には影響しない。
+          await chrome.storage.session.set({ ["userClosed:" + sid]: true }).catch(() => {});
+        }
       }
     }
     await setBindings(bindings);
