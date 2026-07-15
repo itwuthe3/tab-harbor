@@ -192,6 +192,13 @@ Permissions. The sidePanel permission renders the UI, tabs lists and focuses or 
 - [ ] プライバシーポリシー URL(上記)
 - [ ] 再提出時は manifest.json の `version` を上げる
 
+## トラブルシューティング
+
+- Partner Center で保存時に「Something went wrong. Please try again.
+  correlationId: …」が出るのは既知の一時的エラー(禁止文字ではない)。
+  時間を置いて再試行、または InPrivate ウィンドウ / 別ブラウザで解消する
+  (2026-07 に英語 Description 保存で遭遇 → 再試行で解消)
+
 ## 審査の目安
 
 - Chrome Web Store: 登録料 $5(初回のみ)。審査は通常 1〜3 日
