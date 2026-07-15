@@ -327,6 +327,28 @@ body {
   outline: 1px dashed var(--accent);
 }
 
+/* ---------- 遅延復元ボタン ---------- */
+.restore-btn {
+  display: block;
+  width: 100%;
+  padding: 7px 10px;
+  margin-bottom: 4px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--fg-dim);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: center;
+}
+
+.restore-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
 /* ---------- buttons ---------- */
 .icon-btn {
   border: none;

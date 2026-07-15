@@ -361,6 +361,18 @@ function bindDropTarget(row, getTarget, hoverClass = "drag-over") {
 
 function renderTabs() {
   els.tabList.replaceChildren();
+
+  // 遅延復元ボタン: pendingRestoreCount > 0 のとき先頭に表示
+  if (state.pendingRestoreCount > 0) {
+    const btn = document.createElement("button");
+    btn.className = "restore-btn";
+    btn.textContent = `以前のタブ ${state.pendingRestoreCount} 件を復元`;
+    btn.addEventListener("click", () =>
+      send({ type: "restoreSavedTabs", windowId, spaceId: state.activeSpaceId })
+    );
+    els.tabList.appendChild(btn);
+  }
+
   if (!state.tabs.length) {
     const hint = document.createElement("div");
     hint.className = "empty-hint";

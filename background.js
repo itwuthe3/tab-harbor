@@ -202,29 +202,57 @@ async function liveGroupId(binding, spaceId) {
   }
 }
 
-// Space のグループをウィンドウ内に実体化する(保存 URL の復元つき)
+// Space のグループをウィンドウ内に実体化する。
+// メモリ節約のため先頭 URL の 1 枚だけ即時復元し、残りは pendingRestore に退避する。
+// ユーザーがパネルの「復元」ボタンを押したときに初めて残りを開く。
 async function materializeSpace(windowId, space) {
-  const key = "savedTabs:" + space.id;
-  const { [key]: saved = [] } = await chrome.storage.local.get(key);
+  const savedKey   = "savedTabs:"     + space.id;
+  const pendingKey = "pendingRestore:" + space.id;
+  const { [savedKey]: saved = [] } = await chrome.storage.local.get(savedKey);
+  const urls = saved.filter((u) => RESTORABLE_URL.test(u));
+
+  // 2 枚目以降を pendingRestore に退避(前回の pendingRestore は上書きリセット)
+  if (urls.length > 1) {
+    await chrome.storage.local.set({ [pendingKey]: urls.slice(1) });
+  } else {
+    await chrome.storage.local.remove(pendingKey);
+  }
+
+  // 先頭 URL だけ開く(なければ新規タブ)
   const tabIds = [];
-  for (const url of saved.filter((u) => RESTORABLE_URL.test(u))) {
+  if (urls[0]) {
     try {
-      const t = await chrome.tabs.create({ windowId, url, active: false });
+      const t = await chrome.tabs.create({ windowId, url: urls[0], active: false });
       tabIds.push(t.id);
-    } catch {
-      /* 開けない URL はスキップ */
-    }
+    } catch { /* skip */ }
   }
   if (!tabIds.length) {
     const t = await chrome.tabs.create({ windowId, active: false });
     tabIds.push(t.id);
   }
-  const gid = await chrome.tabs.group({
-    tabIds,
-    createProperties: { windowId },
-  });
+  const gid = await chrome.tabs.group({ tabIds, createProperties: { windowId } });
   await chrome.tabGroups.update(gid, { title: space.name, color: space.color });
   return gid;
+}
+
+// pendingRestore に退避していたタブを全て開いてキーを削除する
+async function restoreSavedTabs(windowId, spaceId) {
+  const pendingKey = "pendingRestore:" + spaceId;
+  const { [pendingKey]: pending = [] } = await chrome.storage.local.get(pendingKey);
+  if (!pending.length) return;
+  const bindings = await getBindings();
+  const b = bindings[windowId];
+  const gid = b ? await liveGroupId(b, spaceId) : undefined;
+  for (const url of pending.filter((u) => RESTORABLE_URL.test(u))) {
+    try {
+      const t = await chrome.tabs.create({ windowId, url, active: false });
+      if (gid !== undefined) {
+        await chrome.tabs.group({ tabIds: [t.id], groupId: gid }).catch(() => {});
+      }
+    } catch { /* skip */ }
+  }
+  await chrome.storage.local.remove(pendingKey);
+  broadcast();
 }
 
 async function createSpace(windowId, name, color) {
@@ -271,6 +299,7 @@ async function deleteSpace(windowId, spaceId) {
   await setOrder(newOrder);
   await chrome.storage.local.remove("space:" + spaceId);
   await chrome.storage.local.remove("savedTabs:" + spaceId);
+  await chrome.storage.local.remove("pendingRestore:" + spaceId);
   for (const b of Object.values(bindings)) {
     if (b.activeSpaceId === spaceId) b.activeSpaceId = newOrder[0];
   }
@@ -693,6 +722,12 @@ async function getState(windowId) {
     grouped: t.groupId !== NO_GROUP,
   });
 
+  // 遅延復元待ちのタブ数をパネルに伝える
+  const pendingKey = "pendingRestore:" + active?.id;
+  const { [pendingKey]: pending = [] } = active
+    ? await chrome.storage.local.get(pendingKey)
+    : {};
+
   return {
     windowId,
     activeSpaceId: active?.id ?? null,
@@ -715,6 +750,7 @@ async function getState(windowId) {
     }),
     // 束縛済みタブは「タブ」一覧に出さない(Pin 行がそのタブを表す)
     tabs: allTabs.filter((t) => !boundTabIds.has(t.id)).map(toView),
+    pendingRestoreCount: pending.length,
   };
 }
 
@@ -913,6 +949,8 @@ async function dispatch(msg) {
       return enqueue(() => renameFolder(msg.spaceId, msg.folderId, msg.title));
     case "toggleFolder":
       return enqueue(() => toggleFolder(msg.spaceId, msg.folderId));
+    case "restoreSavedTabs":
+      return enqueue(() => restoreSavedTabs(msg.windowId, msg.spaceId));
     case "pinTabAt":
       return enqueue(() => pinTabAt(msg.spaceId, msg.tabId, msg.targetFolderId ?? null, msg.targetIndex));
     case "moveTab":
