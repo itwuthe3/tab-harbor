@@ -261,6 +261,46 @@ async function generate(locale) {
     console.log("wrote", out);
   }
 
+  // マーキープロモーションタイル(CWS 全言語向けアセット、1400x560)。
+  // 全言語共通素材なので英語パスでのみ生成する。
+  // 注意: CWS はアルファ無し 24bit PNG を要求するため、生成後に
+  //   python3 -c "from PIL import Image; p='dist/store-assets/promo-marquee-1400x560.png'; Image.open(p).convert('RGB').save(p)"
+  // で RGB 化すること(package 手順は docs/store-listing.md 参照)。
+  if (locale === "en") {
+    const b64 = readFileSync(shots[0]).toString("base64");
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+      * { margin:0; box-sizing:border-box; }
+      body { width:1400px; height:560px; overflow:hidden;
+        font-family:"Hiragino Sans",system-ui,sans-serif;
+        background: linear-gradient(135deg,#0d2438 0%,#123b5c 55%,#1b5580 100%);
+        display:flex; align-items:center; justify-content:space-between; padding:0 110px; }
+      .text { color:#eaf6ff; max-width:640px; }
+      .text h1 { font-size:52px; font-weight:700; line-height:1.3; margin-bottom:20px; }
+      .text p { font-size:22px; line-height:1.7; opacity:.85; }
+      .brand { display:flex; align-items:center; gap:14px; margin-bottom:34px;
+        font-size:26px; font-weight:700; letter-spacing:.02em; }
+      .brand img { width:48px; height:48px; border-radius:11px; }
+      .shotwrap { height:560px; display:flex; align-items:flex-start; overflow:hidden; }
+      .shot { height:640px; margin-top:52px; border-radius:14px;
+        box-shadow:0 30px 80px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.08); }
+    </style></head><body>
+      <div class="text">
+        <div class="brand"><img src="data:image/png;base64,${brandIcon}">Tab Harbor</div>
+        <h1>Bring Arc's sidebar to Edge &amp; Chrome</h1>
+        <p>Pinned tabs, Spaces and folders — with one-click import from Arc. No data collection.</p>
+      </div>
+      <div class="shotwrap"><img class="shot" src="data:image/png;base64,${b64}"></div>
+    </body></html>`;
+    const file = path.join(work, "marquee.html");
+    writeFileSync(file, html);
+    await framer.setViewportSize({ width: 1400, height: 560 });
+    await framer.goto("file://" + file);
+    await sleep(400);
+    const out = path.join(OUT, "promo-marquee-1400x560.png");
+    await framer.screenshot({ path: out, scale: "css" });
+    console.log("wrote", out);
+  }
+
   await ctx.close();
 }
 

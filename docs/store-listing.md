@@ -182,8 +182,13 @@ Permissions. The sidePanel permission renders the UI, tabs lists and focuses or 
 - [ ] スクリーンショット 1280x800: 日本語リスティングに `screenshot-ja-1..3.png`、
       英語リスティングに `screenshot-en-1..3.png`(`dist/store-assets/`、
       `scripts/gen-store-shots.mjs` で日英まとめて再生成可)
-- [ ] ストアアイコン: Chrome 128x128(`icons/icon128.png`)、
-      Edge 300x300(`dist/store-assets/icon300.png`)
+- [ ] ストアアイコン: Chrome はパッケージ内 manifest の 128px アイコンが自動使用
+      (アップロード欄なし)、Edge は 300x300(`dist/store-assets/icon300.png`)
+- [ ] マーキープロモーションタイル(CWS 全言語向けアセット・任意):
+      `dist/store-assets/promo-marquee-1400x560.png`。
+      **アルファ無し 24bit PNG 指定**なので、再生成したら
+      `python3 -c "from PIL import Image; p='dist/store-assets/promo-marquee-1400x560.png'; Image.open(p).convert('RGB').save(p)"`
+      で RGB 化してからアップロードする
 - [ ] プライバシーポリシー URL(上記)
 - [ ] 再提出時は manifest.json の `version` を上げる
 
