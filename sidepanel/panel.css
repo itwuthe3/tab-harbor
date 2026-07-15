@@ -327,12 +327,17 @@ body {
   outline: 1px dashed var(--accent);
 }
 
-/* ---------- 遅延復元ボタン ---------- */
-.restore-btn {
-  display: block;
-  width: 100%;
-  padding: 7px 10px;
+/* ---------- 遅延復元バー ---------- */
+.restore-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   margin-bottom: 4px;
+}
+
+.restore-btn {
+  flex: 1;
+  padding: 7px 10px;
   border: 1px dashed var(--border);
   border-radius: var(--radius);
   background: transparent;
@@ -347,6 +352,26 @@ body {
   border-color: var(--accent);
   color: var(--accent);
   background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.restore-discard {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--fg-dim);
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.restore-discard:hover {
+  background: var(--bg-hover);
+  color: var(--danger);
 }
 
 /* ---------- buttons ---------- */

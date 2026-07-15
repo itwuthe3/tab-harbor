@@ -364,13 +364,23 @@ function renderTabs() {
 
   // 遅延復元ボタン: pendingRestoreCount > 0 のとき先頭に表示
   if (state.pendingRestoreCount > 0) {
-    const btn = document.createElement("button");
-    btn.className = "restore-btn";
-    btn.textContent = `以前のタブ ${state.pendingRestoreCount} 件を復元`;
-    btn.addEventListener("click", () =>
+    const wrap = document.createElement("div");
+    wrap.className = "restore-bar";
+    const restoreBtn = document.createElement("button");
+    restoreBtn.className = "restore-btn";
+    restoreBtn.textContent = `以前のタブ ${state.pendingRestoreCount} 件を復元`;
+    restoreBtn.addEventListener("click", () =>
       send({ type: "restoreSavedTabs", windowId, spaceId: state.activeSpaceId })
     );
-    els.tabList.appendChild(btn);
+    const discardBtn = document.createElement("button");
+    discardBtn.className = "restore-discard";
+    discardBtn.textContent = "×";
+    discardBtn.title = "破棄する";
+    discardBtn.addEventListener("click", () =>
+      send({ type: "discardSavedTabs", spaceId: state.activeSpaceId })
+    );
+    wrap.append(restoreBtn, discardBtn);
+    els.tabList.appendChild(wrap);
   }
 
   if (!state.tabs.length) {

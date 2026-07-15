@@ -951,6 +951,8 @@ async function dispatch(msg) {
       return enqueue(() => toggleFolder(msg.spaceId, msg.folderId));
     case "restoreSavedTabs":
       return enqueue(() => restoreSavedTabs(msg.windowId, msg.spaceId));
+    case "discardSavedTabs":
+      return chrome.storage.local.remove("pendingRestore:" + msg.spaceId);
     case "pinTabAt":
       return enqueue(() => pinTabAt(msg.spaceId, msg.tabId, msg.targetFolderId ?? null, msg.targetIndex));
     case "moveTab":
