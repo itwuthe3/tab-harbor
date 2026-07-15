@@ -179,7 +179,9 @@ Permissions. The sidePanel permission renders the UI, tabs lists and focuses or 
 ## 提出物チェックリスト
 
 - [ ] `scripts/package.sh` で生成した zip(`dist/tab-harbor-<version>.zip`)
-- [ ] スクリーンショット 3 枚 1280x800(`dist/store-assets/screenshot-*.png`)
+- [ ] スクリーンショット 1280x800: 日本語リスティングに `screenshot-ja-1..3.png`、
+      英語リスティングに `screenshot-en-1..3.png`(`dist/store-assets/`、
+      `scripts/gen-store-shots.mjs` で日英まとめて再生成可)
 - [ ] ストアアイコン: Chrome 128x128(`icons/icon128.png`)、
       Edge 300x300(`dist/store-assets/icon300.png`)
 - [ ] プライバシーポリシー URL(上記)
