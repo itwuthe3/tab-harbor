@@ -313,6 +313,33 @@ async function restoreSavedTabs(windowId, spaceId) {
   broadcast();
 }
 
+// タブを別スペースへ移動する。
+// ターゲットスペースがライブなら直接グループ移動、非ライブなら savedTabs に追記して閉じる。
+async function moveTabToSpace(windowId, tabId, targetSpaceId) {
+  const bindings = await getBindings();
+  const b = bindings[windowId];
+  if (!b) return;
+
+  const targetGid = await liveGroupId(b, targetSpaceId);
+  if (targetGid !== undefined) {
+    await chrome.tabs.group({ tabIds: [tabId], groupId: targetGid }).catch(() => {});
+  } else {
+    const tab = await chrome.tabs.get(tabId).catch(() => null);
+    const url = tab ? (tab.pendingUrl || tab.url || "") : "";
+    if (url && RESTORABLE_URL.test(url)) {
+      const savedKey   = "savedTabs:"     + targetSpaceId;
+      const pendingKey = "pendingRestore:" + targetSpaceId;
+      const { [savedKey]: saved = [], [pendingKey]: pending } =
+        await chrome.storage.local.get([savedKey, pendingKey]);
+      const patch = { [savedKey]: [...saved, url].slice(0, 50) };
+      if (pending) patch[pendingKey] = [...pending, url];
+      await chrome.storage.local.set(patch);
+    }
+    await chrome.tabs.remove(tabId).catch(() => {});
+  }
+  broadcast();
+}
+
 async function createSpace(windowId, name, color) {
   const space = { id: crypto.randomUUID(), name, color, pins: [] };
   await saveSpace(space);
@@ -1153,6 +1180,8 @@ async function dispatch(msg) {
       return enqueue(() => pinTabAt(msg.spaceId, msg.tabId, msg.targetFolderId ?? null, msg.targetIndex));
     case "moveTab":
       return chrome.tabs.move(msg.tabId, { index: msg.targetIndex });
+    case "moveTabToSpace":
+      return enqueue(() => moveTabToSpace(msg.windowId, msg.tabId, msg.targetSpaceId));
     case "renamePin":
       return enqueue(() => renamePin(msg.spaceId, msg.pinId, msg.customTitle));
     case "updatePin":

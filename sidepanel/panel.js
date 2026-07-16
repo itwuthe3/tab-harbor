@@ -144,6 +144,22 @@ function renderChips() {
     chip.addEventListener("click", () => {
       send({ type: "switchSpace", windowId, spaceId: space.id });
     });
+    // タブをスペースチップにドロップするとそのスペースへ移動
+    if (space.id !== state.activeSpaceId) {
+      chip.addEventListener("dragover", (e) => {
+        if (!dragTabId) return;
+        e.preventDefault();
+        chip.classList.add("drop-target");
+      });
+      chip.addEventListener("dragleave", () => chip.classList.remove("drop-target"));
+      chip.addEventListener("drop", (e) => {
+        e.preventDefault();
+        chip.classList.remove("drop-target");
+        if (!dragTabId) return;
+        send({ type: "moveTabToSpace", windowId, tabId: dragTabId, targetSpaceId: space.id });
+        dragTabId = null;
+      });
+    }
     els.chips.appendChild(chip);
   }
   const add = document.createElement("button");
@@ -596,6 +612,7 @@ function renderTabs() {
     );
 
     row.addEventListener("click", () => send({ type: "activateTab", tabId: tab.id }));
+    row.addEventListener("contextmenu", (e) => showTabContextMenu(e, tab));
 
     // DnD: タブの並び替え & Pin エリアへのドロップによる Pin 化
     row.addEventListener("dragstart", (e) => {
@@ -763,6 +780,55 @@ function showSpacePinContextMenu(e, pin, spaceId) {
     send({ type: "removeItem", spaceId, itemId: pin.id });
   });
   menu.appendChild(deleteBtn);
+
+  document.body.appendChild(menu);
+  gpContextMenuEl = menu;
+
+  const x = Math.min(e.clientX, window.innerWidth - menu.offsetWidth - 8);
+  const y = Math.min(e.clientY, window.innerHeight - menu.offsetHeight - 8);
+  menu.style.left = x + "px";
+  menu.style.top = y + "px";
+
+  setTimeout(() => {
+    document.addEventListener("click", hideGpContextMenu, { once: true });
+    document.addEventListener("contextmenu", hideGpContextMenu, { once: true });
+    document.addEventListener("keydown", (ev) => { if (ev.key === "Escape") hideGpContextMenu(); }, { once: true });
+  }, 0);
+}
+
+function showTabContextMenu(e, tab) {
+  e.preventDefault();
+  e.stopPropagation();
+  hideGpContextMenu();
+  hideTooltip();
+
+  const otherSpaces = state.spaces.filter((s) => s.id !== state.activeSpaceId);
+  if (!otherSpaces.length) return;
+
+  const menu = document.createElement("div");
+  menu.className = "context-menu";
+
+  const header = document.createElement("div");
+  header.className = "context-menu-header";
+  header.textContent = t("moveToSpaceHeader");
+  menu.appendChild(header);
+
+  for (const space of otherSpaces) {
+    const btn = document.createElement("button");
+    btn.className = "context-menu-item";
+    btn.style.display = "flex";
+    btn.style.alignItems = "center";
+    const dot = document.createElement("span");
+    dot.className = "ctx-space-dot";
+    dot.style.background = GROUP_COLOR_HEX[space.color] ?? "#888";
+    btn.appendChild(dot);
+    btn.appendChild(document.createTextNode(space.name));
+    btn.addEventListener("click", () => {
+      hideGpContextMenu();
+      send({ type: "moveTabToSpace", windowId, tabId: tab.id, targetSpaceId: space.id });
+    });
+    menu.appendChild(btn);
+  }
 
   document.body.appendChild(menu);
   gpContextMenuEl = menu;

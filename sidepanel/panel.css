@@ -216,17 +216,17 @@ body {
   outline: 1px dashed var(--accent);
 }
 
+#scroll-body {
+  flex: 1;
+  overflow-y: auto;
+}
+
 #pins-section {
   padding: 10px 8px 6px;
-  overflow-y: auto;
-  max-height: 28%;
-  flex: none;
 }
 
 #tabs-section {
   padding: 8px 8px 10px;
-  overflow-y: auto;
-  flex: 1;
 }
 
 .section-head {
@@ -681,7 +681,35 @@ dialog::backdrop {
   border-radius: var(--radius);
   padding: 4px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
-  min-width: 150px;
+  min-width: 160px;
+}
+
+.context-menu-header {
+  padding: 4px 10px 2px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+  pointer-events: none;
+}
+
+.ctx-space-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+/* スペースチップへのタブドロップ時ハイライト */
+.chip.drop-target {
+  outline: 2px solid var(--fg);
+  outline-offset: 2px;
+  opacity: 1;
+  transform: scale(1.12);
 }
 
 .context-menu-item {

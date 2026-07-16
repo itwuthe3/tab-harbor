@@ -60,6 +60,8 @@
   "pinToSpaceTitle": { "message": "この Space に Pin する" },
   "closeTabTitle": { "message": "タブを閉じる" },
 
+  "moveToSpaceHeader": { "message": "別の Space に移動" },
+
   "menuRenameFolder": { "message": "フォルダ名を変更" },
   "menuEditPin": { "message": "Pin を編集(名前・URL)" },
   "menuDeleteFolder": { "message": "フォルダを削除(中身ごと)" },
