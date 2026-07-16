@@ -247,8 +247,8 @@ async function liveGroupId(binding, spaceId) {
 }
 
 // Space のグループをウィンドウ内に実体化する。
-// メモリ節約のため先頭 URL の 1 枚だけ即時復元し、残りは pendingRestore に退避する。
-// ユーザーがパネルの「復元」ボタンを押したときに初めて残りを開く。
+// savedTabs は全て pendingRestore に退避し、常に新規タブ 1 枚だけ開く。
+// ユーザーがパネルの「復元」ボタンを押したときに初めて savedTabs を開く。
 async function materializeSpace(windowId, space) {
   const savedKey   = "savedTabs:"     + space.id;
   const pendingKey = "pendingRestore:" + space.id;
@@ -262,26 +262,17 @@ async function materializeSpace(windowId, space) {
   const { [savedKey]: saved = [] } = await chrome.storage.local.get(savedKey);
   const urls = userClosed ? [] : saved.filter((u) => RESTORABLE_URL.test(u));
 
-  // 2 枚目以降を pendingRestore に退避(前回の pendingRestore は上書きリセット)
-  if (urls.length > 1) {
-    await chrome.storage.local.set({ [pendingKey]: urls.slice(1) });
+  // 全 URL を pendingRestore に退避(ユーザーが復元ボタンを押したときに初めて開く)
+  // スペース切り替え時に savedTabs を自動で開かないことで「意図しないタブ復元」を防ぐ
+  if (urls.length > 0) {
+    await chrome.storage.local.set({ [pendingKey]: urls });
   } else {
     await chrome.storage.local.remove(pendingKey);
   }
 
-  // 先頭 URL だけ開く(なければ新規タブ)
-  const tabIds = [];
-  if (urls[0]) {
-    try {
-      const t = await chrome.tabs.create({ windowId, url: urls[0], active: false });
-      tabIds.push(t.id);
-    } catch { /* skip */ }
-  }
-  if (!tabIds.length) {
-    const t = await chrome.tabs.create({ windowId, active: false });
-    tabIds.push(t.id);
-  }
-  const gid = await chrome.tabs.group({ tabIds, createProperties: { windowId } });
+  // 常に新規タブを 1 枚作成
+  const t = await chrome.tabs.create({ windowId, active: false });
+  const gid = await chrome.tabs.group({ tabIds: [t.id], createProperties: { windowId } });
   await chrome.tabGroups.update(gid, { title: space.name, color: space.color });
   return gid;
 }
@@ -294,6 +285,12 @@ async function restoreSavedTabs(windowId, spaceId) {
   const bindings = await getBindings();
   const b = bindings[windowId];
   const gid = b ? await liveGroupId(b, spaceId) : undefined;
+
+  // 復元前にグループ内の空タブ(materializeSpace が作成した新規タブ)を記録
+  const preExisting = gid !== undefined
+    ? await chrome.tabs.query({ groupId: gid }).catch(() => [])
+    : [];
+
   for (const url of pending.filter((u) => RESTORABLE_URL.test(u))) {
     try {
       const t = await chrome.tabs.create({ windowId, url, active: false });
@@ -302,6 +299,16 @@ async function restoreSavedTabs(windowId, spaceId) {
       }
     } catch { /* skip */ }
   }
+
+  // 復元後: 復元前から存在した空タブ(新規タブページ)を閉じる
+  const blankTabUrl = /^(about:blank|chrome:\/\/newtab\/|edge:\/\/newtab)/;
+  for (const t of preExisting) {
+    const url = t.url || t.pendingUrl || "";
+    if (blankTabUrl.test(url) || url === "") {
+      await chrome.tabs.remove(t.id).catch(() => {});
+    }
+  }
+
   await chrome.storage.local.remove(pendingKey);
   broadcast();
 }
