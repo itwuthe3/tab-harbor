@@ -3,7 +3,8 @@
 //
 // 実行: node scripts/gen-pin-guide-shot.mjs <素材ディレクトリ>
 //   素材: chrome_pin.png / chrome_icon.png / edge_pin.png / edge_icon.png
-//   出力: dist/store-assets/pin-guide-{chrome,edge}-ja.png
+//   出力: dist/store-assets/pin-guide-{chrome,edge}-{ja,en}.png
+//   (en 版もスクショ素材は共通。キャプションのみ英語)
 //
 // 注意: 素材に個人情報(天気ウィジェットの地名など)が写っている場合は、
 // 事前にぼかしてから渡すこと。
@@ -24,17 +25,26 @@ mkdirSync(OUT, { recursive: true });
 const work = mkdtempSync(path.join(os.tmpdir(), "harbor-pinguide-"));
 const b64 = (p) => readFileSync(p).toString("base64");
 
-const CAPTION = {
-  title: "ワンクリックで開けるようにする",
-  sub: "拡張機能メニュー(パズルアイコン)で Tab Harbor をピン留めしておくと、アドレスバー横のアイコンをクリックするだけでサイドバーが開きます。",
-  step1: "拡張機能メニューでピン留め",
-  step2: "以降はワンクリックで開く",
+const CAPTIONS = {
+  ja: {
+    title: "ワンクリックで開けるようにする",
+    sub: "拡張機能メニュー(パズルアイコン)で Tab Harbor をピン留めしておくと、アドレスバー横のアイコンをクリックするだけでサイドバーが開きます。",
+    step1: "拡張機能メニューでピン留め",
+    step2: "以降はワンクリックで開く",
+  },
+  en: {
+    title: "Open it with a single click",
+    sub: "Pin Tab Harbor in the extensions menu (the puzzle icon), and the sidebar opens with one click on the anchor icon next to the address bar.",
+    step1: "Pin it in the extensions menu",
+    step2: "Then it is one click away",
+  },
 };
 
 const browser = await chromium.launch({ channel: "chromium", headless: true });
 const page = await browser.newPage({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 2 });
 
-for (const target of ["chrome", "edge"]) {
+for (const [target, locale] of ["chrome", "edge"].flatMap((t) => ["ja", "en"].map((l) => [t, l]))) {
+  const CAPTION = CAPTIONS[locale];
   const pinImg = path.join(srcDir, `${target}_pin.png`);
   const iconImg = path.join(srcDir, `${target}_icon.png`);
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
@@ -70,11 +80,11 @@ for (const target of ["chrome", "edge"]) {
         <img src="data:image/png;base64,${b64(iconImg)}"></div>
     </div>
   </body></html>`;
-  const file = path.join(work, `frame-${target}.html`);
+  const file = path.join(work, `frame-${target}-${locale}.html`);
   writeFileSync(file, html);
   await page.goto("file://" + file);
   await new Promise((r) => setTimeout(r, 400));
-  const out = path.join(OUT, `pin-guide-${target}-ja.png`);
+  const out = path.join(OUT, `pin-guide-${target}-${locale}.png`);
   await page.screenshot({ path: out, scale: "css" });
   console.log("wrote", out);
 }
