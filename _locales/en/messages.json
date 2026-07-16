@@ -60,6 +60,8 @@
   "pinToSpaceTitle": { "message": "Pin to this Space" },
   "closeTabTitle": { "message": "Close tab" },
 
+  "moveToSpaceHeader": { "message": "Move to another Space" },
+
   "menuRenameFolder": { "message": "Rename folder" },
   "menuEditPin": { "message": "Edit pin (name & URL)" },
   "menuDeleteFolder": { "message": "Delete folder (with contents)" },

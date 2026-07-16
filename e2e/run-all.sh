@@ -3,7 +3,7 @@
 set -u
 cd "$(dirname "$0")"
 failed=0
-for suite in basic import folders pintabs globalpins restore i18n; do
+for suite in basic import folders pintabs globalpins restore movetab i18n; do
   echo "=== $suite ==="
   node "$suite.mjs" || failed=1
   echo
