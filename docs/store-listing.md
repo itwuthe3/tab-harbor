@@ -71,6 +71,7 @@ Alt+Shift+. / Alt+Shift+,: Space を巡回切替
 データはブラウザ内にのみ保存され、外部サーバーへの送信・アナリティクス・トラッキングは一切ありません。ソースコードは GitHub で公開しています: https://github.com/itwuthe3/tab-harbor
 
 ■ ヒント
+アドレスバー右の拡張機能メニュー(パズルアイコン)で Tab Harbor をピン留めしておくと、以降はアドレスバー横のアイコンをワンクリックするだけでサイドバーを開けます。
 Edge の「垂直タブ」と組み合わせると、より Arc に近い画面構成になります。
 ```
 
@@ -103,6 +104,7 @@ Alt+Shift+H: toggle the sidebar / Alt+Shift+. and Alt+Shift+,: cycle Spaces
 Everything is stored inside your browser. No servers, no analytics, no tracking. Open source: https://github.com/itwuthe3/tab-harbor
 
 ■ Tip
+Pin Tab Harbor in the extensions menu (the puzzle icon next to the address bar) to open the sidebar with a single click on the anchor icon.
 Pairs nicely with Edge's vertical tabs for the full Arc-like layout.
 ```
 
@@ -182,6 +184,10 @@ Permissions. The sidePanel permission renders the UI, tabs lists and focuses or 
 - [ ] スクリーンショット 1280x800: 日本語リスティングに `screenshot-ja-1..3.png`、
       英語リスティングに `screenshot-en-1..3.png`(`dist/store-assets/`、
       `scripts/gen-store-shots.mjs` で日英まとめて再生成可)
+- [ ] ピン留めガイド画像(日本語リスティングの 4 枚目):
+      Chrome には `pin-guide-chrome-ja.png`、Edge には `pin-guide-edge-ja.png`。
+      素材は手動撮影のブラウザスクショで、`scripts/gen-pin-guide-shot.mjs
+      <素材ディレクトリ>` で合成(素材に地名等の個人情報が写っていないか要確認)
 - [ ] ストアアイコン: Chrome はパッケージ内 manifest の 128px アイコンが自動使用
       (アップロード欄なし)、Edge は 300x300(`dist/store-assets/icon300.png`)
 - [ ] マーキープロモーションタイル(CWS 全言語向けアセット・任意):
