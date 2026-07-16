@@ -84,5 +84,8 @@ const extId = new URL(sw.url()).host;
 - `globalpins.mjs`: 全 Space 共通 Pin。`#global-pin-current` で追加、
   Space を跨いで表示、右クリックで `.context-menu`(編集/削除)、
   Space Pin からのドラッグで transferPin
-- `restore.mjs`: 遅延復元。グループ消失後の切替は先頭 1 タブのみ復元し
-  `.restore-bar` に残り件数(復元 / × 破棄)。snapshot は 1.5 秒デバウンス
+- `restore.mjs`: 遅延復元(v0.1.4 仕様)。切替時に savedTabs は自動で開かず、
+  常に新規タブ 1 枚 + `.restore-bar`(全件を復元 / × 破棄)。復元実行時は
+  空タブが自動で閉じる。ユーザーがグループを閉じた場合は session の
+  `userClosed:<spaceId>` フラグでバー自体を抑止(テストで再起動相当にするには
+  このフラグを session から消す)。snapshot は 1.5 秒デバウンス

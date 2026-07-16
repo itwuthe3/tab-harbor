@@ -1,5 +1,7 @@
-// 遅延復元: グループ消失後の Space 切替は先頭 1 タブのみ復元し、
-// 残りは復元バー(復元 / 破棄)で扱う
+// 遅延復元(v0.1.4 仕様):
+// - Space 切替時に savedTabs を自動で開かない(常に新規タブ 1 枚 + 復元バー)
+// - ユーザーがグループを閉じた場合(userClosed)は復元バー自体を出さない
+// - 復元ボタンで全 URL を開き、切替時に作られた空タブは自動で閉じる
 import { launch, openPanel, check, finish, sleep, tmpdir, writePage, msg } from "./helper.mjs";
 
 const dir = tmpdir();
@@ -33,10 +35,20 @@ const killWork = () =>
       await chrome.tabs.remove(tabs.map((t) => t.id));
     }
   });
+// ブラウザ再起動相当: session の userClosed フラグを消す
+const clearUserClosed = () =>
+  sw.evaluate(async () => {
+    const all = await chrome.storage.session.get(null);
+    const keys = Object.keys(all).filter((k) => k.startsWith("userClosed:"));
+    if (keys.length) await chrome.storage.session.remove(keys);
+    return keys.length;
+  });
+const barCount = () => panel.$$eval(".restore-bar", (els) => els.length);
+const isBlank = (u) => /newtab|^about:blank$|^$/.test(u ?? "");
 
-check("準備: Work グループに 3+1 タブ", (await workTabs()).filter((u) => u.includes("w")).length >= 3);
+check("準備: Work グループに 3 タブ + 空タブ", (await workTabs()).filter((u) => u.includes("w")).length >= 3);
 
-// --- 1. グループ消失 → 切替で 1 枚だけ復元 + 復元バー -----------------------------
+// --- 1. 🔍 ユーザーがグループを閉じた場合: 復元バーは出ない ------------------------
 await panel.locator(".chip", { hasText: "H" }).first().click();
 await sleep(1200);
 await killWork();
@@ -44,32 +56,54 @@ await sleep(800);
 await panel.locator(".chip", { hasText: "W" }).first().click();
 await sleep(2000);
 let tabs = await workTabs();
-const barText = await panel.textContent(".restore-bar .restore-btn").catch(() => "");
-check("遅延復元: 先頭 1 タブのみ即時復元", tabs.length === 1, JSON.stringify(tabs));
-check("復元バー: 残り件数を表示", barText === (await msg(panel, "restoreTabs", "2")), barText);
+check("🔍 userClosed: 新規タブ 1 枚のみでバーは出ない", tabs.length === 1 && isBlank(tabs[0]) && (await barCount()) === 0, JSON.stringify(tabs));
+const savedKept = await sw.evaluate(async () => {
+  const all = await chrome.storage.local.get(null);
+  const key = Object.keys(all).find((k) => k.startsWith("savedTabs:") && JSON.stringify(all[k]).includes("w1"));
+  return !!key;
+});
+check("🔍 userClosed でも savedTabs 自体は残る", savedKept);
 
-// --- 2. 復元ボタン → 全タブが戻りバーが消える --------------------------------------
+// --- 2. 再起動相当(userClosed 無し)→ バー表示、自動では開かない -------------------
+await panel.locator(".chip", { hasText: "H" }).first().click();
+await sleep(1200);
+await killWork();
+await sleep(800);
+await clearUserClosed();
+await panel.locator(".chip", { hasText: "W" }).first().click();
+await sleep(2000);
+tabs = await workTabs();
+const barText = await panel.textContent(".restore-bar .restore-btn").catch(() => "");
+check("切替: savedTabs を自動で開かず新規タブ 1 枚のみ", tabs.length === 1 && isBlank(tabs[0]), JSON.stringify(tabs));
+check("復元バー: 全 3 件の復元を提示", barText === (await msg(panel, "restoreTabs", "3")), barText);
+
+// --- 3. 復元ボタン → 全タブが戻り、空タブは自動で閉じられる ------------------------
 await panel.click(".restore-bar .restore-btn");
 await sleep(2000);
 tabs = await workTabs();
-check("復元実行: 全タブが戻る", tabs.length >= 3, JSON.stringify(tabs));
-check("復元実行: バーが消える", (await panel.$$eval(".restore-bar", (els) => els.length)) === 0);
+check(
+  "復元実行: 3 タブが戻り、空タブは閉じられる",
+  tabs.length === 3 && tabs.every((u) => u.includes("w")) && !tabs.some(isBlank),
+  JSON.stringify(tabs)
+);
+check("復元実行: バーが消える", (await barCount()) === 0);
 
-// --- 3. 🔍 破棄ボタン → バーが消えタブは増えない ------------------------------------
+// --- 4. 🔍 破棄ボタン → バーが消えタブは増えない ------------------------------------
 await sleep(2000); // snapshot を待つ
 await panel.locator(".chip", { hasText: "H" }).first().click();
 await sleep(1200);
 await killWork();
 await sleep(800);
+await clearUserClosed();
 await panel.locator(".chip", { hasText: "W" }).first().click();
 await sleep(2000);
-check("🔍 再度 1 タブ + バー表示", (await workTabs()).length === 1 && (await panel.$$eval(".restore-bar", (els) => els.length)) === 1);
+check("🔍 再度 1 タブ + バー表示", (await workTabs()).length === 1 && (await barCount()) === 1);
 await panel.click(".restore-bar .restore-discard");
 await sleep(800);
 const pendingKeys = await sw.evaluate(async () => Object.keys(await chrome.storage.local.get(null)).filter((k) => k.startsWith("pendingRestore:")));
 check(
   "🔍 破棄: バーが消えタブは増えず、pendingRestore も消える",
-  (await panel.$$eval(".restore-bar", (els) => els.length)) === 0 && (await workTabs()).length === 1 && pendingKeys.length === 0,
+  (await barCount()) === 0 && (await workTabs()).length === 1 && pendingKeys.length === 0,
   JSON.stringify(pendingKeys)
 );
 

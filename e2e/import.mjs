@@ -80,14 +80,23 @@ pinLabels = await labels(panel, "#pin-list");
 const pad = await panel.$eval("#pin-list .row.folder-row + .row", (el) => el.style.paddingLeft);
 check("フォルダ展開: Beta が 24px インデントで出る", pinLabels.includes("Beta (in folder)") && pad === "24px", pad);
 
-// savedTabs(1 件)は即時復元され、復元バーは出ない
-const st = await sw.evaluate(async () => {
+// savedTabs は自動では開かれず、復元バー(1 件)経由で開く(v0.1.4 仕様)
+let st = await sw.evaluate(async () => {
   const groups = await chrome.tabGroups.query({ title: "Imported" });
   const tabs = groups.length ? await chrome.tabs.query({ groupId: groups[0].id }) : [];
   return tabs.map((t) => t.url || t.pendingUrl);
 });
-check("切替: savedTabs が復元される", st.some((u) => u.includes("example.com/today")), JSON.stringify(st));
-check("復元バー: 残タブ無しなら出ない", (await panel.$$eval(".restore-bar", (els) => els.length)) === 0);
+check("切替: savedTabs は自動で開かれない(新規タブ 1 枚)", st.length === 1 && !st[0].includes("example.com/today"), JSON.stringify(st));
+const barText = await panel.textContent(".restore-bar .restore-btn").catch(() => "");
+check("復元バー: インポートしたタブ 1 件を提示", barText === (await msg(panel, "restoreTabs", "1")), barText);
+await panel.click(".restore-bar .restore-btn");
+await sleep(1500);
+st = await sw.evaluate(async () => {
+  const groups = await chrome.tabGroups.query({ title: "Imported" });
+  const tabs = groups.length ? await chrome.tabs.query({ groupId: groups[0].id }) : [];
+  return tabs.map((t) => t.url || t.pendingUrl);
+});
+check("復元実行: today タブが開き、空タブは閉じられる", st.length === 1 && st[0].includes("example.com/today"), JSON.stringify(st));
 
 // --- 4. 🔍 再インポート → 統合・重複なし ----------------------------------------
 await panel.setInputFiles("#arc-file", fixturePath);

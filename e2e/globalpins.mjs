@@ -38,6 +38,27 @@ await panel.locator("#global-pin-list .gp-icon").click();
 await sleep(800);
 check("クリック: Site A のタブにフォーカス", (await activeUrl()).includes("a.html"));
 
+// --- 3.5 🔍 リダイレクト相当: URL が変わってもタブ ID で追跡される(v0.1.4)---------
+const driftUrl = writePage(dir, "a2.html", "Site A drifted");
+await pageA.goto(driftUrl);
+await sleep(1000);
+check(
+  "🔍 遷移後: Global Pin タブがタブ一覧に混入しない",
+  !(await labels(panel, "#tab-list")).some((t) => t.includes("drifted")),
+  JSON.stringify(await labels(panel, "#tab-list"))
+);
+const nBefore = await sw.evaluate(async () => (await chrome.tabs.query({ currentWindow: true })).length);
+await pageB.bringToFront();
+await sleep(300);
+await panel.locator("#global-pin-list .gp-icon").click();
+await sleep(800);
+const nAfter = await sw.evaluate(async () => (await chrome.tabs.query({ currentWindow: true })).length);
+check(
+  "🔍 遷移後クリック: 同じタブへフォーカス(新規タブなし)",
+  (await activeUrl()).includes("a2.html") && nAfter === nBefore,
+  `active=${await activeUrl()} tabs ${nBefore}→${nAfter}`
+);
+
 // --- 4. 🔍 右クリックメニューから削除 ---------------------------------------------
 await panel.locator("#global-pin-list .gp-icon").click({ button: "right" });
 await sleep(300);
